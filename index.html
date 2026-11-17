@@ -81,7 +81,7 @@
   .item .t{flex:1;line-height:1.45}
   .item .t small{color:var(--muted);display:block}
   .st{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}
-  .st.pending{background:var(--warn-bg);color:var(--warn)}
+  .st.pending,.st.admin{background:var(--warn-bg);color:var(--warn)}
   .st.approved{background:var(--want-bg);color:#1d6b40}
   .st.declined,.st.rejected,.st.failed{background:var(--block-bg);color:var(--block)}
   .st.cancelled{background:#eee;color:#777}
@@ -228,7 +228,7 @@
       <div id="vList"></div>
     </div>
   </div>
-<div class="ver">גרסה 8.4 (17/11)</div>
+<div class="ver">גרסה 8.5 (17/11)</div>
 </main>
 <div id="topAlert" role="alert"></div>
 <div class="bar" id="bar"><div class="in"><button class="btn" id="save">שליחת אילוצים</button></div></div>
@@ -237,7 +237,7 @@
 var HEB_DAYS=['א','ב','ג','ד','ה','ו','ש'];
 var FULL_DAYS=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
 var LAB={W:'רוצה',B:'חוסם',C:''};
-var ST={pending:'ממתין',approved:'אושר',declined:'נדחה',rejected:'לא אושר',failed:'לא בוצע',cancelled:'בוטל'};
+var ST={admin:'ממתין לאחראית',pending:'ממתין',approved:'אושר',declined:'נדחה',rejected:'לא אושר',failed:'לא בוצע',cancelled:'בוטל'};
 var S=null,values={},brush='B',me=null,dirty=false,schedule=null,colors={},myMax=8,shownMax=8,reqs=[],tab='cons',swapPick=null,pubs=[],canSubmit=false;
 
 /* הכתובת של Apps Script. אם הפריסה משתנה, מעדכנים כאן (בשני הקבצים) */
@@ -533,7 +533,7 @@ function renderSwap(){
   [].forEach.call($('incoming').querySelectorAll('[data-ok],[data-no]'),function(b){b.onclick=function(){
     var ok=!!b.dataset.ok,id=b.dataset.ok||b.dataset.no;
     if(ok&&!confirm(b.dataset.give?'לקחת את המשמרת? הסידור יתעדכן מיד.':'לאשר את ההחלפה? הסידור יתעדכן מיד.'))return;
-    b.disabled=true;run('respondSwap',me.name,me.token,id,ok).then(function(r){msg($('swapMsg'),'ok',r.status==='approved'?'בוצע, והסידור עודכן.':'הבקשה נדחתה.');return refresh()}).catch(function(e){msg($('swapMsg'),'err',e.message);refresh()})}});
+    b.disabled=true;run('respondSwap',me.name,me.token,id,ok).then(function(r){msg($('swapMsg'),'ok',r.status==='approved'?'בוצע, והסידור עודכן.':r.status==='admin'?'אישרת. בהחלפה הזו ייווצרו שני עובדים חדשים באותה משמרת, ולכן היא עוברת לאישור האחראית. תקבל/י מייל כשהיא תטפל בזה.':'הבקשה נדחתה.');return refresh()}).catch(function(e){msg($('swapMsg'),'err',e.message);refresh()})}});
   var gs=$('giveSel'),prev=gs.value,m=myShifts();
   gs.innerHTML=m.length?m.map(function(d){return '<option value="'+d+'">'+dn(d)+'</option>'}).join(''):'<option value="">אין לך משמרות</option>';
   if(m.indexOf(prev)>=0)gs.value=prev;
@@ -543,9 +543,9 @@ function renderSwap(){
   var all=out.concat(past);
   $('outgoing').innerHTML=all.length?all.map(function(q){var mine=q.from===me.name;
     if(q.type==='give')return '<div class="item"><div class="t">'+(mine?'מסרתי '+dn(q.details.give)+' <small>'+(q.to==='*'?'לכל הפנויים':'ל'+esc(q.to))+'</small>':esc(q.from)+': לקחתי ממנו/ה '+dn(q.details.give))+'</div><span class="st '+q.status+'">'+ST[q.status]+'</span>'+
-      (mine&&q.status==='pending'?'<button class="no btn-s" data-cancel="'+q.id+'">ביטול</button>':'')+'</div>';
+      (mine&&(q.status==='pending'||q.status==='admin')?'<button class="no btn-s" data-cancel="'+q.id+'">ביטול</button>':'')+'</div>';
     return '<div class="item"><div class="t">'+(mine?'מסרתי '+dn(q.details.give)+' ולקחתי '+dn(q.details.take)+' <small>מול '+esc(q.to)+'</small>':esc(q.from)+': לקחתי '+dn(q.details.give)+' ומסרתי '+dn(q.details.take))+'</div><span class="st '+q.status+'">'+ST[q.status]+'</span>'+
-      (mine&&q.status==='pending'?'<button class="no btn-s" data-cancel="'+q.id+'">ביטול</button>':'')+'</div>'}).join(''):'<div class="empty-note">עוד לא שלחת בקשות.</div>';
+      (mine&&(q.status==='pending'||q.status==='admin')?'<button class="no btn-s" data-cancel="'+q.id+'">ביטול</button>':'')+'</div>'}).join(''):'<div class="empty-note">עוד לא שלחת בקשות.</div>';
   [].forEach.call($('outgoing').querySelectorAll('[data-cancel]'),function(b){b.onclick=function(){b.disabled=true;run('cancelRequest',me.name,me.token,b.dataset.cancel).then(refresh).catch(function(e){msg($('swapMsg'),'err',e.message)})}});
 }
 $('giveSel').onchange=function(){swapPick=null;renderCands();renderGiveTo()};
@@ -585,14 +585,16 @@ $('swapSend').onclick=function(){
   var give=$('giveSel').value;
   if(giveMode){
     var to=$('giveTo').value;if(!give||!to)return;$('swapSend').disabled=true;
-    run('requestGive',me.name,me.token,schedule.periodId,give,to,$('swapNote').value).then(function(){
-      msg($('swapMsg'),'ok','הבקשה נשלחה ל'+to+'. המשמרת תעבור אחרי האישור שלו/ה.');$('swapNote').value='';return refresh();
+    run('requestGive',me.name,me.token,schedule.periodId,give,to,$('swapNote').value).then(function(r){
+      if(r&&r.needsAdmin)topAlert('המסירה הזו תשבץ שני עובדים חדשים באותה משמרת, ולכן היא תעבור גם לאישור האחראית.');
+      msg($('swapMsg'),'ok','הבקשה נשלחה ל'+to+'. המשמרת תעבור אחרי האישור שלו/ה'+(r&&r.needsAdmin?' ושל האחראית.':'.'));$('swapNote').value='';return refresh();
     }).catch(function(e){msg($('swapMsg'),'err',e.message);$('swapSend').disabled=false});
     return;
   }
   if(!swapPick)return;$('swapSend').disabled=true;
-  run('requestSwap',me.name,me.token,schedule.periodId,give,swapPick.d,swapPick.n,$('swapNote').value).then(function(){
-    msg($('swapMsg'),'ok','הבקשה נשלחה ל'+swapPick.n+'. ההחלפה תיכנס לסידור אחרי האישור שלו/ה.');swapPick=null;$('swapNote').value='';return refresh();
+  run('requestSwap',me.name,me.token,schedule.periodId,give,swapPick.d,swapPick.n,$('swapNote').value).then(function(r){
+    if(r&&r.needsAdmin)topAlert('ההחלפה הזו תשבץ שני עובדים חדשים באותה משמרת, ולכן היא תעבור גם לאישור האחראית.');
+    msg($('swapMsg'),'ok','הבקשה נשלחה ל'+swapPick.n+'. ההחלפה תיכנס לסידור אחרי האישור שלו/ה'+(r&&r.needsAdmin?' ושל האחראית.':'.'));swapPick=null;$('swapNote').value='';return refresh();
   }).catch(function(e){msg($('swapMsg'),'err',e.message);$('swapSend').disabled=false});
 };
 

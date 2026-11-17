@@ -89,7 +89,7 @@
   .rq{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
   .rq .t{flex:1;line-height:1.5}
   .st{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}
-  .st.pending{background:var(--warn-bg);color:var(--warn)}
+  .st.pending,.st.admin{background:var(--warn-bg);color:var(--warn)}
   .st.approved{background:var(--want-bg);color:#1d6b40}
   .st.declined,.st.rejected,.st.failed{background:var(--block-bg);color:var(--block)}
   .st.cancelled{background:#eee;color:#777}
@@ -199,6 +199,7 @@
   </nav>
 </header>
 <main>
+<div id="senBox" class="card hide" style="border:2px solid #f0b429;background:#fffaf0"></div>
 
 <!-- ============ SCHEDULE ============ -->
 <section id="tab-sched">
@@ -226,6 +227,8 @@
       <div class="card det" id="det"><h3>פרטי יום</h3><div class="muted">לחצי על תאריך כדי לראות מי רוצה, מי יכול ומי חוסם.</div></div>
       <div class="card"><h2>מאזן משמרות</h2><div class="scrollx"><table id="stats"></table></div>
         <div class="muted" style="margin-top:8px">סופ"ש = שישי, שבת וחג. רצופים = יום אחרי יום. שב' ריקים = שבועות בלי משמרת. רוצה = כמה ימי "רוצה" קיבל/ה מתוך כמה שביקש/ה. יכול = כמה משמרות קיבל/ה בימים שסימן/ה "יכול". סופ"ש 2 חודשים קודמים = סך הסופ"שים בשתי התקופות הקודמות, והשיבוץ האוטומטי מאזן לפיו.</div></div>
+      <div class="card hide" id="expCard"><h2>חשיפה של עובדים חדשים</h2><div class="scrollx"><table id="expo"></table></div>
+        <div class="muted" style="margin-top:8px">כמה משמרות כל עובד/ת חדש/ה עשה/תה עם כל אחד, מתחילת העבודה (סידורים שפורסמו) כולל התקופה הזו. המספר הקטן = כמה מהן בתקופה הזו. אדום = עוד לא עבד/ה עם הוותיק/ה הזה/ו.</div></div>
       <div class="card"><h2>התראות <span id="wcount" class="muted"></span></h2><ul class="wl" id="warns"></ul></div>
       <div class="card" id="notesCard"><h2>הערות מהעובדים</h2><div id="notes"></div></div>
     </div>
@@ -252,7 +255,7 @@
   <div class="card"><h2>חופשות לאישור</h2><div id="vacPending"></div></div>
   <div class="card"><h2>חופשות שטופלו</h2><div id="vacApproved"></div></div>
   <div class="card"><h2>החלפות ומסירות שממתינות</h2><p class="muted">את יכולה לאשר החלפה או מסירה גם אם העובד השני עוד לא אישר. הסידור יתעדכן מיד, ושניהם יקבלו מייל (אם המיילים פעילים).</p><div id="swapPending"></div></div>
-  <div class="card"><h2>יומן החלפות ומסירות</h2><p class="muted">החלפות מתבצעות אוטומטית כששני העובדים מאשרים. אם צריך לבטל החלפה, שני את הסידור ידנית בלשונית סידור.</p><div id="swapLog"></div></div>
+  <div class="card"><h2>יומן החלפות ומסירות</h2><p class="muted">החלפות מתבצעות אוטומטית כששני העובדים מאשרים, חוץ מהחלפה שתשבץ שני חדשים באותה משמרת: היא מחכה גם לאישור שלך. אם צריך לבטל החלפה, שני את הסידור ידנית בלשונית סידור.</p><div id="swapLog"></div></div>
 </section>
 
 <!-- ============ EMPLOYEES ============ -->
@@ -260,7 +263,7 @@
   <div class="card">
     <div class="row"><h2 style="margin:0">עוזרי רופא</h2><span class="sp"></span>
       <button class="btn2" id="addEmp">הוספת עובד/ת</button><button class="btn" id="saveEmps">שמירה</button></div>
-    <p class="muted">ותק "חדש": השיבוץ האוטומטי ישתדל לא לשבץ שני חדשים באותו יום. מקסימום חסימות ריק = ברירת המחדל מההגדרות. מתחיל מתאריך: לפני התאריך הזה לא ישובץ, ומספר המשמרות היעד שלו יחסי.<br>כניסת עובדים: בכניסה הראשונה העובד מקבל קוד למייל ובוחר סיסמה. אם אין לו מייל כאן, הוא מזין מייל בעצמו, והמייל נשמר אחרי שאימת את הקוד. מי ששכח סיסמה יכול לאפס לבד דרך המייל, או שתאפסי לו כאן.</p>
+    <p class="muted">ותק "חדש": השיבוץ האוטומטי ישתדל לא לשבץ שני חדשים באותו יום. מקסימום חסימות ריק = ברירת המחדל מההגדרות. תחילת עבודה: לפני התאריך הזה לא ישובץ, ובחודש הראשון מספר המשמרות היעד שלו יחסי. לעובד חדש עם תאריך תחילת עבודה, אחרי 4 חודשים תופיע שאלה אם להחשיב אותו כותיק, שוב אחרי 5 חודשים, ואחרי 6 חודשים הוא הופך לותיק אוטומטית. רצף ברוצה: השיבוץ האוטומטי רשאי לשבץ אותו בימים רצופים שסימן בהם רוצה (בעדיפות הכי נמוכה, ועדיין לפחות משמרת בשבוע).<br>כניסת עובדים: בכניסה הראשונה העובד מקבל קוד למייל ובוחר סיסמה. אם אין לו מייל כאן, הוא מזין מייל בעצמו, והמייל נשמר אחרי שאימת את הקוד. מי ששכח סיסמה יכול לאפס לבד דרך המייל, או שתאפסי לו כאן.</p>
     <div class="scrollx"><table class="et" id="et"></table></div>
   </div>
 </section>
@@ -325,7 +328,7 @@
     <div class="row"><input id="newPw" type="password" placeholder="סיסמה חדשה"><button class="btn2" id="chPw">עדכון</button></div>
   </div>
 </section>
-<div style="text-align:center;color:#b0b8b6;font-size:11px;margin:18px 0 0">גרסה 8.4 (17/11)</div>
+<div style="text-align:center;color:#b0b8b6;font-size:11px;margin:18px 0 0">גרסה 8.5 (17/11)</div>
 </main>
 </div>
 
@@ -432,6 +435,8 @@ var Scheduler = (function () {
     var sumF = frac.reduce(function (x, y) { return x + y; }, 0) || 1;
     var sumFW = fracW.reduce(function (x, y) { return x + y; }, 0) || 1;
     var isNew = emps.map(function (e) { return !!e.isNew; });
+    // "רצף ברוצה": מותר לשבץ ברצף ימים שהעובד סימן בהם רוצה (בלי קנס), שאר הכללים נשארים
+    var consecOK = emps.map(function (e) { return !!e.consec; });
     var minS = emps.map(function (e, i) { return Math.floor(num(e.min, 0) * frac[i]); });
     var maxS = emps.map(function (e) { return num(e.max, 99); });
     var target = emps.map(function (e, i) { return Math.min(Math.max(totalSlots * frac[i] / sumF, minS[i]), maxS[i]); });
@@ -467,7 +472,7 @@ var Scheduler = (function () {
       for (var j = 0; j < n; j++) {
         var di = onDays[j];
         if (weekendDay[di]) w++;
-        if (j > 0 && onDays[j - 1] === di - 1) cons++;
+        if (j > 0 && onDays[j - 1] === di - 1 && !(consecOK[i] && av[i][di] === 2 && av[i][di - 1] === 2)) cons++;
         if (di === 0 && lastPrev[i]) cons++;
         if (av[i][di] === 2) wants++;
         weeks[weekOf[di]]++;
@@ -596,6 +601,7 @@ var Scheduler = (function () {
   function analyze(days, holidays, employees, avail, assignment, vacations, prevTail) {
     var newSet = {}; employees.forEach(function (e) { if (e.isNew) newSet[e.name] = 1; });
     var startOf = {}; employees.forEach(function (e) { if (e.start) startOf[e.name] = e.start; });
+    var consecSet = {}; employees.forEach(function (e) { if (e.consec) consecSet[e.name] = 1; });
     var stats = {};
     employees.forEach(function (e) {
       stats[e.name] = { name: e.name, total: 0, weekend: 0, consecutive: 0, wants: 0, blocked: 0, emptyWeeks: 0, min: num(e.min, 0), max: num(e.max, 99), dates: [] };
@@ -626,7 +632,11 @@ var Scheduler = (function () {
     Object.keys(stats).forEach(function (k) {
       var st = stats[k];
       st.dates.sort(function (a, b) { return a - b; });
-      for (var j = 1; j < st.dates.length; j++) if (st.dates[j] === st.dates[j - 1] + 1) st.consecutive++;
+      st.consecWanted = 0;
+      for (var j = 1; j < st.dates.length; j++) if (st.dates[j] === st.dates[j - 1] + 1) {
+        var w1 = avail[k] && avail[k][days[st.dates[j - 1]]], w2 = avail[k] && avail[k][days[st.dates[j]]];
+        if (consecSet[k] && w1 === 'W' && w2 === 'W') st.consecWanted++; else st.consecutive++;
+      }
       st.boundary = false;
       if (st.dates[0] === 0 && prevTail && days.length && (prevTail[addDays(days[0], -1)] || []).indexOf(k) >= 0) { st.consecutive++; st.boundary = true; }
       st.canDays = 0;
@@ -701,8 +711,42 @@ function boot(d){
   ['perSel','perSel2'].forEach(function(id){$(id).innerHTML=opts;$(id).value=d.view.periodId});
   $('perNote').textContent=d.view.current?'':'את צופה בתקופה קודמת. שינויים כאן לא משפיעים על ההגדרות של התקופה הנוכחית.';
   setDirty(false);respDirty={};
-  empDraft=null;renderSched();renderResp();renderEmps();renderSett();renderReqs();
+  empDraft=null;renderSched();renderResp();renderEmps();renderSett();renderReqs();renderSen();
 }
+/* ---------- חשיפה: עם מי כל עובד חדש עבד ---------- */
+function renderExpo(){
+  var news=activeEmps().filter(function(e){return e.isNew});
+  $('expCard').classList.toggle('hide',!news.length);if(!news.length)return;
+  var hist=D.pairHist||{},cur={};
+  news.forEach(function(e){cur[e.name]={}});
+  days().forEach(function(d){var arr=(A[d]||[]).filter(Boolean);
+    news.forEach(function(e){if(arr.indexOf(e.name)<0)return;arr.forEach(function(o){if(o!==e.name)cur[e.name][o]=(cur[e.name][o]||0)+1})})});
+  var h='<tr><th style="text-align:right">עובד/ת</th>'+news.map(function(e){return '<th>'+esc(e.name)+'</th>'}).join('')+'</tr>';
+  activeEmps().forEach(function(o){
+    var cells=news.map(function(e){if(e.name===o.name)return '<td class="muted">-</td>';
+      var c=cur[e.name][o.name]||0,t=c+((hist[e.name]||{})[o.name]||0);
+      return '<td class="'+(t||o.isNew?'':'bad-t')+'">'+t+(c?' <span class="muted">('+c+')</span>':'')+'</td>'}).join('');
+    h+='<tr><td class="nm"><span class="dot" style="background:'+esc(o.color)+'"></span>'+esc(o.name)+(o.isNew?'<span class="newtag">חדש</span>':'')+'</td>'+cells+'</tr>'});
+  $('expo').innerHTML=h;
+}
+/* ---------- ותק: שאלה אחרי 4 ו-5 חודשים, מעבר אוטומטי אחרי 6 ---------- */
+var senSeen={};
+function renderSen(){
+  var sn=D.seniority||{ask:[],auto:[]},box=$('senBox'),h='';
+  sn.auto.filter(function(x){return !senSeen[x.name]}).forEach(function(x){
+    h+='<div class="rq"><div class="t"><b>'+esc(x.name)+'</b> עבר/ה 6 חודשים (מאז '+fmt(x.start)+') ולכן מעכשיו נחשב/ת ותיק/ה.</div><button class="btn3" data-sok="'+esc(x.name)+'">הבנתי</button></div>'});
+  sn.ask.forEach(function(x){
+    h+='<div class="rq"><div class="t"><b>'+esc(x.name)+'</b> עובד/ת '+x.stage+' חודשים (מאז '+fmt(x.start)+'). אפשר להחשיב אותו/ה כותיק/ה?<br><span class="muted">'+(x.stage>=5?'אם לא, בעוד חודש הוא/היא יעבור/תעבור לותיק אוטומטית.':'אם לא, אשאל שוב בעוד חודש.')+'</span></div><button class="btn" data-sy="'+esc(x.name)+'">כן, ותיק/ה</button><button class="btn2" data-sn="'+esc(x.name)+'">עדיין לא</button></div>'});
+  box.innerHTML=h?'<h2 style="margin-top:0">ותק עובדים</h2>'+h:'';box.classList.toggle('hide',!h);
+  [].forEach.call(box.querySelectorAll('[data-sok]'),function(b){b.onclick=function(){senSeen[b.dataset.sok]=1;renderSen()}});
+  [].forEach.call(box.querySelectorAll('[data-sy],[data-sn]'),function(b){b.onclick=function(){
+    var yes=!!b.dataset.sy,n=b.dataset.sy||b.dataset.sn;b.disabled=true;
+    run('adminSeniority',PW,n,yes).then(function(r){D.employees=r.employees;D.seniority={ask:r.seniority.ask,auto:((D.seniority&&D.seniority.auto)||[]).concat(r.seniority.auto)};
+      if(empDraft)empDraft.forEach(function(e){if((e.origName||e.name)===n&&yes)e.isNew=false});
+      renderEmps();renderSched();renderSen();toast(yes?n+' סומן/ה כותיק/ה':'אשאל שוב בעוד חודש')}).catch(fail)}});
+}
+function tenure(e){if(!e.start||e.start>todayIso())return '';var a=e.start.split('-').map(Number),b=todayIso().split('-').map(Number);var m=(b[0]-a[0])*12+(b[1]-a[1])-(b[2]<a[2]?1:0);return m>=12?Math.floor(m/12)+' שנ\' '+(m%12?'+'+m%12+' ח\'':''):m+' ח\''}
+function todayIso(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
 
 $('perSel').onchange=$('perSel2').onchange=function(ev){
   var id=ev.target.value;
@@ -799,11 +843,11 @@ function renderSide(){
   var h='<tr><th style="text-align:right">שם</th><th>סה"כ</th><th>סופ"ש</th>'+(hasPrev?'<th title="סופ&quot;שים בשתי התקופות הקודמות">סופ"ש 2 חודשים קודמים</th>':'')+'<th>רוצה</th><th title="כמה משמרות קיבל/ה בימים שסימן/ה יכול">יכול</th><th>רצופים</th><th>שב\' ריקים</th></tr>';
   emps.forEach(function(e){
     var s=an.stats[e.name];var mn=parseFloat(e.min),mx=parseFloat(e.max);
-    var tc=(!isNaN(mx)&&s.total>mx)||(!isNaN(mn)&&!e.start&&s.total<mn)?'bad-t':'';
+    var tc=(!isNaN(mx)&&s.total>mx)||(!isNaN(mn)&&!(e.start&&e.start>ds[0])&&s.total<mn)?'bad-t':'';
     var nores=!D.responses[e.name];
-    h+='<tr><td class="nm"><span class="dot" style="background:'+esc(e.color)+'"></span>'+esc(e.name)+(e.isNew?'<span class="newtag">חדש</span>':'')+(nores?' <span class="muted">(לא הגיש)</span>':'')+'</td><td class="'+tc+'" title="טווח: '+(e.min||'0')+'-'+(e.max||'')+'">'+s.total+'</td><td>'+s.weekend+'</td>'+(hasPrev?'<td class="muted">'+prevWk(e.name)+'</td>':'')+'<td title="קיבל/ה מתוך הימים שביקש/ה">'+(function(){var asked=ds.filter(function(d){return val(e.name,d)==='W'}).length;return asked?s.wants+'/'+asked:'-'})()+'</td><td>'+(s.canDays||0)+'</td><td class="'+(s.consecutive?'warn-t':'')+'">'+s.consecutive+'</td><td class="'+(s.emptyWeeks?'warn-t':'')+'">'+s.emptyWeeks+'</td></tr>';
+    h+='<tr><td class="nm"><span class="dot" style="background:'+esc(e.color)+'"></span>'+esc(e.name)+(e.isNew?'<span class="newtag">חדש</span>':'')+(nores?' <span class="muted">(לא הגיש)</span>':'')+'</td><td class="'+tc+'" title="טווח: '+(e.min||'0')+'-'+(e.max||'')+'">'+s.total+'</td><td>'+s.weekend+'</td>'+(hasPrev?'<td class="muted">'+prevWk(e.name)+'</td>':'')+'<td title="קיבל/ה מתוך הימים שביקש/ה">'+(function(){var asked=ds.filter(function(d){return val(e.name,d)==='W'}).length;return asked?s.wants+'/'+asked:'-'})()+'</td><td>'+(s.canDays||0)+'</td><td class="'+(s.consecutive?'warn-t':'')+'"'+(s.consecWanted?' title="'+s.consecWanted+' רצופים בימי רוצה, מותר לפי ההגדרה של העובד/ת"':'')+'>'+s.consecutive+(s.consecWanted?' <span class="muted">+'+s.consecWanted+' ברוצה</span>':'')+'</td><td class="'+(s.emptyWeeks?'warn-t':'')+'">'+s.emptyWeeks+'</td></tr>';
   });
-  $('stats').innerHTML=h;
+  $('stats').innerHTML=h;renderExpo();
   var notes=emps.filter(function(e){return D.responses[e.name]&&D.responses[e.name].note});
   $('notesCard').classList.toggle('hide',!notes.length);
   $('notes').innerHTML=notes.map(function(e){return '<div class="rq"><div class="t"><span class="dot" style="background:'+esc(e.color)+'"></span><b>'+esc(e.name)+':</b> '+esc(D.responses[e.name].note)+'</div></div>'}).join('');
@@ -835,7 +879,7 @@ function renderSide(){
 function auto(fromScratch){
   var ds=days(),fixed={};
   ds.forEach(function(d){var n=Scheduler.slotsFor(d,hol());fixed[d]=fromScratch?[]:(A[d]||[]).slice(0,n);if(fromScratch)O[d]=[]});
-  var emps=activeEmps().map(function(e){return{name:e.name,min:e.min,max:e.max,isNew:e.isNew,start:e.start}});
+  var emps=activeEmps().map(function(e){return{name:e.name,min:e.min,max:e.max,isNew:e.isNew,start:e.start,consec:e.consec}});
   var newNames=activeEmps().filter(function(e){return e.isNew}).map(function(e){return e.name});
   var missing=activeEmps().filter(function(e){return !D.responses[e.name]}).length;
   if(!$('inclMissing').checked&&missing===activeEmps().length){toast('אף עובד לא הגיש אילוצים עדיין',true);return}
@@ -937,17 +981,17 @@ $('saveResp').onclick=function(){
 };
 
 /* ---------- requests ---------- */
-var STL={pending:'ממתין',approved:'אושר',declined:'נדחה',rejected:'לא אושר',failed:'לא בוצע',cancelled:'בוטל'};
+var STL={admin:'ממתין לאישורך',pending:'ממתין',approved:'אושר',declined:'נדחה',rejected:'לא אושר',failed:'לא בוצע',cancelled:'בוטל'};
 function dnm(iso){return 'יום '+HEB[Scheduler.dow(iso)]+' '+fmt(iso)}
 function vrange(q){return fmt(q.details.start)+(q.details.end!==q.details.start?' עד '+fmt(q.details.end):'')}
 function renderReqs(){
   var R=(D.requests||[]).slice().reverse();
   var vp=R.filter(function(q){return q.type==='vacation'&&q.status==='pending'});
-  var sp=R.filter(function(q){return (q.type==='swap'||q.type==='give')&&q.status==='pending'});
+  var sp=R.filter(function(q){return (q.type==='swap'||q.type==='give')&&(q.status==='pending'||q.status==='admin')});
   var tx=function(q,pend){if(q.type==='give')return '<b>'+esc(q.from)+'</b> '+(pend?'מוסר/ת':'מסר/ה')+' '+dnm(q.details.give)+' '+(q.to==='*'?'לכל מי שפנוי':'ל<b>'+esc(q.to)+'</b>')+' (בלי להחזיר)';
     return '<b>'+esc(q.from)+'</b> '+(pend?'מוסר/ת':'מסר/ה')+' '+dnm(q.details.give)+' ל<b>'+esc(q.to)+'</b> ו'+(pend?'לוקח/ת':'לקח/ה')+' '+dnm(q.details.take)};
   $('reqBadge').textContent=vp.length+sp.length;$('reqBadge').classList.toggle('hide',!(vp.length+sp.length));
-  $('swapPending').innerHTML=sp.length?sp.map(function(q){return '<div class="rq"><div class="t">'+tx(q,true)+(q.note?' <span class="muted">"'+esc(q.note)+'"</span>':'')+'<br><span class="muted">נשלח '+esc(q.created)+', '+(q.to==='*'?'ממתין שמישהו ייקח':'ממתין לאישור של '+esc(q.to))+'</span></div>'+(q.to==='*'?'':'<button class="btn" data-sa="'+q.id+'">אישור</button>')+'<button class="danger" data-sr="'+q.id+'">דחייה</button></div>'}).join(''):'<div class="muted">אין החלפות ממתינות.</div>';
+  $('swapPending').innerHTML=sp.length?sp.map(function(q){return '<div class="rq"><div class="t">'+tx(q,true)+(q.note?' <span class="muted">"'+esc(q.note)+'"</span>':'')+'<br><span class="muted">נשלח '+esc(q.created)+', '+(q.status==='admin'?'</span><span class="bad-t">'+esc(q.to)+' הסכים/ה. ממתין לאישורך: ייווצר יום עם שני חדשים':q.to==='*'?'ממתין שמישהו ייקח':'ממתין לאישור של '+esc(q.to)+(q.details&&q.details.adminReq?', ואחר כך לאישורך (שני חדשים)':''))+'</span></div>'+(q.to==='*'?'':'<button class="btn" data-sa="'+q.id+'">אישור</button>')+'<button class="danger" data-sr="'+q.id+'">דחייה</button></div>'}).join(''):'<div class="muted">אין החלפות ממתינות.</div>';
   $('vacPending').innerHTML=vp.length?vp.map(function(q){
     var conflict=Scheduler.listDays(q.details.start,q.details.end).filter(function(d){return (A[d]||[]).indexOf(q.from)>=0});
     return '<div class="rq"><div class="t"><b>'+esc(q.from)+'</b>: '+vrange(q)+(q.note?' <span class="muted">"'+esc(q.note)+'"</span>':'')+'<br><span class="muted">נשלח '+esc(q.created)+'</span>'+(conflict.length?'<br><span class="bad-t">משובץ/ת בסידור ב: '+conflict.map(fmt).join(', ')+'</span>':'')+'</div><button class="btn" data-va="'+q.id+'">אישור</button><button class="danger" data-vr="'+q.id+'">דחייה</button></div>'}).join(''):'<div class="muted">אין בקשות ממתינות.</div>';
@@ -971,9 +1015,9 @@ function renderReqs(){
 /* ---------- employees ---------- */
 function renderEmps(){
   if(!empDraft)empDraft=D.employees.map(function(e){return Object.assign({origName:e.name},e)});
-  var h='<tr><th>צבע</th><th style="text-align:right">שם</th><th style="text-align:right">מייל</th><th>פעיל</th><th>ותק</th><th>מינ\' משמרות</th><th>מקס\' משמרות</th><th>מקס\' חסימות</th><th>מתחיל מתאריך</th><th>סיסמה</th><th></th></tr>';
+  var h='<tr><th>צבע</th><th style="text-align:right">שם</th><th style="text-align:right">מייל</th><th>פעיל</th><th>ותק</th><th>מינ\' משמרות</th><th>מקס\' משמרות</th><th>מקס\' חסימות</th><th>תחילת עבודה</th><th title="מותר לשבץ ברצף ימים שסימן/ה בהם רוצה">רצף ברוצה</th><th>סיסמה</th><th></th></tr>';
   empDraft.forEach(function(e,i){
-    h+='<tr><td><input type="color" data-i="'+i+'" data-f="color" value="'+esc(e.color||'#cccccc')+'"></td><td><input type="text" data-i="'+i+'" data-f="name" value="'+esc(e.name)+'"></td><td><input type="email" dir="ltr" data-i="'+i+'" data-f="email" value="'+esc(e.email)+'"></td><td><input type="checkbox" data-i="'+i+'" data-f="active"'+(e.active?' checked':'')+'></td><td><select data-i="'+i+'" data-f="isNew"><option value="">ותיק</option><option value="1"'+(e.isNew?' selected':'')+'>חדש</option></select></td><td><input type="number" min="0" data-i="'+i+'" data-f="min" value="'+esc(e.min)+'"></td><td><input type="number" min="0" data-i="'+i+'" data-f="max" value="'+esc(e.max)+'"></td><td><input type="number" min="0" placeholder="'+esc(D.settings.maxBlocks)+'" data-i="'+i+'" data-f="maxBlocks" value="'+esc(e.maxBlocks)+'"></td><td><input type="date" data-i="'+i+'" data-f="start" value="'+esc(e.start)+'"></td><td style="white-space:nowrap">'+(e.hasPw?'<span class="muted">מוגדרת</span> <button class="btn3" data-rpw="'+esc(e.origName||e.name)+'" style="padding:4px 8px;font-size:12px">איפוס</button>':'<span class="muted">עוד לא</span>')+'</td><td><button class="danger" data-del="'+i+'">מחיקה</button></td></tr>';
+    h+='<tr><td><input type="color" data-i="'+i+'" data-f="color" value="'+esc(e.color||'#cccccc')+'"></td><td><input type="text" data-i="'+i+'" data-f="name" value="'+esc(e.name)+'"></td><td><input type="email" dir="ltr" data-i="'+i+'" data-f="email" value="'+esc(e.email)+'"></td><td><input type="checkbox" data-i="'+i+'" data-f="active"'+(e.active?' checked':'')+'></td><td><select data-i="'+i+'" data-f="isNew"><option value="">ותיק</option><option value="1"'+(e.isNew?' selected':'')+'>חדש</option></select></td><td><input type="number" min="0" data-i="'+i+'" data-f="min" value="'+esc(e.min)+'"></td><td><input type="number" min="0" data-i="'+i+'" data-f="max" value="'+esc(e.max)+'"></td><td><input type="number" min="0" placeholder="'+esc(D.settings.maxBlocks)+'" data-i="'+i+'" data-f="maxBlocks" value="'+esc(e.maxBlocks)+'"></td><td style="white-space:nowrap"><input type="date" data-i="'+i+'" data-f="start" value="'+esc(e.start)+'">'+(tenure(e)?' <span class="muted">'+tenure(e)+'</span>':'')+'</td><td><input type="checkbox" data-i="'+i+'" data-f="consec"'+(e.consec?' checked':'')+'></td><td style="white-space:nowrap">'+(e.hasPw?'<span class="muted">מוגדרת</span> <button class="btn3" data-rpw="'+esc(e.origName||e.name)+'" style="padding:4px 8px;font-size:12px">איפוס</button>':'<span class="muted">עוד לא</span>')+'</td><td><button class="danger" data-del="'+i+'">מחיקה</button></td></tr>';
   });
   $('et').innerHTML=h;
   [].forEach.call($('et').querySelectorAll('input,select'),function(inp){inp.oninput=inp.onchange=function(){var e=empDraft[+inp.dataset.i];e[inp.dataset.f]=inp.type==='checkbox'?inp.checked:inp.dataset.f==='isNew'?!!inp.value:inp.value}});

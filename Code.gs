@@ -16,7 +16,7 @@ var SH = {
   periods: 'תקופות',
   versions: 'גרסאות_סידור'
 };
-var EMP_HEADERS = ['שם', 'מייל', 'פעיל', 'מינימום משמרות', 'מקסימום משמרות', 'צבע', 'ותק', 'מקסימום חסימות', 'מתחיל מתאריך', 'הגשה פתוחה עד', 'סיסמה (מוצפנת)'];
+var EMP_HEADERS = ['שם', 'מייל', 'פעיל', 'מינימום משמרות', 'מקסימום משמרות', 'צבע', 'ותק', 'מקסימום חסימות', 'מתחיל מתאריך', 'הגשה פתוחה עד', 'סיסמה (מוצפנת)', 'בדיקת ותק', 'רצף ברוצה'];
 var RESP_HEADERS = ['תקופה', 'שם', 'מייל', 'עודכן', 'מספר חסימות', 'נתונים', 'הערה'];
 var SCHED_HEADERS = ['תקופה', 'נתונים', 'פורסם', 'עודכן'];
 var REQ_HEADERS = ['מזהה', 'סוג', 'סטטוס', 'מבקש', 'מול', 'פרטים', 'הערה', 'נוצר', 'טופל'];
@@ -53,7 +53,7 @@ var API_ = {
   sendSetupCode: sendSetupCode, setPasswordWithCode: setPasswordWithCode,
   adminLoad: adminLoad, adminSaveSettings: adminSaveSettings, adminSaveEmployees: adminSaveEmployees,
   adminSaveResponse: adminSaveResponse, adminSaveSchedule: adminSaveSchedule, adminResolveVacation: adminResolveVacation,
-  adminSetRequestStatus: adminSetRequestStatus, adminResolveSwap: adminResolveSwap, adminChangePassword: adminChangePassword,
+  adminSetRequestStatus: adminSetRequestStatus, adminResolveSwap: adminResolveSwap, adminSeniority: adminSeniority, adminChangePassword: adminChangePassword,
   adminExport: adminExport, adminSetExtension: adminSetExtension, adminSetCurrentPeriod: adminSetCurrentPeriod,
   adminDeletePeriod: adminDeletePeriod, adminResetPassword: adminResetPassword, adminListVersions: adminListVersions
 };
@@ -106,7 +106,7 @@ function setup() {
   if (emp.getLastRow() < 2) {
     var seed = SEED_();
     var rows = seed.map(function (s, i) {
-      return [s[0], s[1], 'כן', '3', '6', colorFor_(s[0], i), 'ותיק', '', '', '', ''];
+      return [s[0], s[1], 'כן', '3', '6', colorFor_(s[0], i), 'ותיק', '', '', '', '', '', ''];
     });
     emp.getRange(2, 1, rows.length, EMP_HEADERS.length).setValues(rows);
     PropertiesService.getScriptProperties().setProperty('COLORS_V2', '1');
@@ -253,14 +253,16 @@ function requestSwap(name, email, periodId, giveDate, takeDate, withName, note) 
     });
     if (dup) throw new Error('כבר שלחת בקשה כזו');
     var id = Utilities.getUuid().slice(0, 8);
-    appendRequest_({ id: id, type: 'swap', status: 'pending', from: me.name, to: other.name,
-      details: { give: giveDate, take: takeDate, period: periodId }, note: note || '' });
+    var det = { give: giveDate, take: takeDate, period: periodId };
+    var needsAdmin = newPairDays_(sched, { type: 'swap', from: me.name, to: other.name, details: det }).length > 0;
+    if (needsAdmin) det.adminReq = true;
+    appendRequest_({ id: id, type: 'swap', status: 'pending', from: me.name, to: other.name, details: det, note: note || '' });
     notify_(other, 'בקשת החלפת משמרת מ' + me.name,
       me.name + ' מבקש/ת להחליף איתך:\n' +
       'את/ה תיקח/י את ' + dayName_(giveDate) + ' ' + fmtD_(giveDate) + '\n' +
       me.name + ' ייקח/תיקח את ' + dayName_(takeDate) + ' ' + fmtD_(takeDate) + '\n' +
-      (note ? 'הערה: ' + note + '\n' : '') + '\nלאישור או דחייה: ' + appUrl_());
-    return { ok: true, id: id };
+      (note ? 'הערה: ' + note + '\n' : '') + (needsAdmin ? '\n' + NEWPAIR_MSG_ + '\n' : '') + '\nלאישור או דחייה: ' + appUrl_());
+    return { ok: true, id: id, needsAdmin: needsAdmin };
   });
 }
 
@@ -283,17 +285,19 @@ function requestGive(name, email, periodId, date, toName, note) {
     });
     if (dup) throw new Error('כבר יש בקשה פתוחה למסירת המשמרת הזו');
     var id = Utilities.getUuid().slice(0, 8);
-    appendRequest_({ id: id, type: 'give', status: 'pending', from: me.name, to: open ? '*' : other.name,
-      details: { give: date, period: periodId }, note: note || '' });
+    var det = { give: date, period: periodId };
+    var needsAdmin = newPairDays_(sched, { type: 'give', from: me.name, to: other.name, details: det }).length > 0;
+    if (needsAdmin) det.adminReq = true;
+    appendRequest_({ id: id, type: 'give', status: 'pending', from: me.name, to: open ? '*' : other.name, details: det, note: note || '' });
     var body = me.name + ' מבקש/ת שמישהו ייקח את המשמרת שלו/ה ב' + dayName_(date) + ' ' + fmtD_(date) + ' (בלי להחזיר משמרת).\n' +
-      (note ? 'הערה: ' + note + '\n' : '') + '\nכדי לקחת אותה: ' + appUrl_();
+      (note ? 'הערה: ' + note + '\n' : '') + (needsAdmin ? '\n' + NEWPAIR_MSG_.replace('ההחלפה', 'המסירה') + '\n' : '') + '\nכדי לקחת אותה: ' + appUrl_();
     if (open) {
       var onDay = sched.a[date] || [];
       readEmployees_().forEach(function (e) {
         if (e.active && e.name !== me.name && onDay.indexOf(e.name) < 0) notify_(e, 'משמרת פנויה ב-' + fmtD_(date), body);
       });
     } else notify_(other, 'בקשה לקחת משמרת מ' + me.name, body);
-    return { ok: true, id: id };
+    return { ok: true, id: id, needsAdmin: needsAdmin };
   });
 }
 
@@ -317,6 +321,21 @@ function respondSwap(name, email, id, accept) {
       notify_(requester, 'הבקשה נדחתה', me.name + ' דחה/תה את הבקשה (' + reqText_(q) + ').');
       return { ok: true, status: 'declined' };
     }
+    var sc = readSchedule_(q.details.period);
+    if (sc && sc.published) {
+      try { validReq_(sc, q); } catch (err) { updateRequest_(id, 'failed'); throw new Error('אי אפשר לבצע: ' + err.message); }
+      var bad = newPairDays_(sc, q);
+      if (bad.length) {
+        updateRequest_(id, 'admin', q.to);
+        var what = (q.type === 'give' ? 'מסירה' : 'החלפה');
+        adminNotify_('ממתין לאישורך: ' + what + ' עם שני חדשים',
+          q.from + ' ו' + q.to + ' הסכימו על ' + what + ' (' + reqText_(q) + ').\nאחרי הביצוע יהיו שני חדשים ביחד ב: ' +
+          bad.map(function (d) { return dayName_(d) + ' ' + fmtD_(d); }).join(', ') + '.\nאפשר לאשר או לדחות בלשונית "בקשות" באתר הניהול.');
+        notify_(requester, 'הבקשה ממתינה לאישור האחראית', me.name + ' הסכים/ה (' + reqText_(q) + '). ' +
+          NEWPAIR_MSG_.replace('ההחלפה', q.type === 'give' ? 'המסירה' : 'ההחלפה') + ' תקבל/י מייל כשהיא תטפל בזה.');
+        return { ok: true, status: 'admin' };
+      }
+    }
     executeSwap_(q, me.name + (q.type === 'give' ? ' לקח/ה את המשמרת' : ' אישר/ה'));
     return { ok: true, status: 'approved' };
   });
@@ -336,19 +355,18 @@ function executeSwap_(q, byText) {
     snapshot_(q.details.period, sched, 'לפני ' + (q.type === 'give' ? 'מסירה' : 'החלפה') + ': ' + q.from + ' / ' + q.to);
     applySwapSlot_(sched, q.details.give, q.from, q.to);
     if (q.type === 'swap') applySwapSlot_(sched, q.details.take, q.to, q.from);
-    alertNewPair_(sched, [q.details.give].concat(q.type === 'swap' ? [q.details.take] : []), q);
     writeSchedule_(q.details.period, sched.a, sched.o, true, sched.m);
     updateRequest_(id, 'approved', q.to);
     // בקשות אחרות על אותן משמרות כבר לא רלוונטיות
     readRequests_().forEach(function (o) {
-      if (o.id === id || (o.type !== 'swap' && o.type !== 'give') || o.status !== 'pending' || o.details.period !== q.details.period) return;
+      if (o.id === id || (o.type !== 'swap' && o.type !== 'give') || (o.status !== 'pending' && o.status !== 'admin') || o.details.period !== q.details.period) return;
       try { validReq_(sched, o); } catch (e) { updateRequest_(o.id, 'failed'); }
     });
     var body = byText + '. הסידור עודכן:\n' +
       (q.type === 'swap' ? q.from + ': ' + dayName_(q.details.take) + ' ' + fmtD_(q.details.take) + '\n' : '') +
       q.to + ': ' + dayName_(q.details.give) + ' ' + fmtD_(q.details.give) + '\n' + appUrl_();
     notify_(requester, q.type === 'give' ? 'המשמרת נלקחה' : 'ההחלפה אושרה', body);
-    if (byText.indexOf('האחראית') === 0) notify_(findEmployee_(q.to), 'ההחלפה אושרה', body);
+    notify_(findEmployee_(q.to), q.type === 'give' ? 'לקחת את המשמרת' : 'ההחלפה אושרה', body);
 }
 
 /** האחראית מאשרת או דוחה בקשת החלפה/מסירה ממתינה, גם בלי אישור העובד השני */
@@ -357,12 +375,13 @@ function adminResolveSwap(pw, id, approve) {
   return withLock_(function () {
     var q = findRequest_(id);
     if (!q || (q.type !== 'swap' && q.type !== 'give')) throw new Error('הבקשה לא נמצאה');
-    if (q.status !== 'pending') throw new Error('הבקשה כבר טופלה');
+    if (q.status !== 'pending' && q.status !== 'admin') throw new Error('הבקשה כבר טופלה');
     if (approve && q.to === '*') throw new Error('המשמרת הוצעה לכולם ועוד אף אחד לא לקח אותה. אפשר לשבץ מישהו ידנית בסידור.');
     if (approve) executeSwap_(q, 'האחראית אישרה את ' + (q.type === 'give' ? 'המסירה' : 'ההחלפה'));
     else {
       updateRequest_(id, 'rejected');
       notify_(findEmployee_(q.from), 'הבקשה לא אושרה', 'האחראית לא אישרה את הבקשה (' + reqText_(q) + ').');
+      if (q.status === 'admin') notify_(findEmployee_(q.to), 'הבקשה לא אושרה', 'האחראית לא אישרה את הבקשה (' + q.from + ', ' + reqText_(q) + ').');
     }
     return readRequests_();
   });
@@ -373,7 +392,7 @@ function cancelRequest(name, email, id) {
     var me = verifyEmployee_(name, email);
     var q = findRequest_(id);
     if (!q || q.from !== me.name) throw new Error('הבקשה לא נמצאה');
-    if (q.status !== 'pending') throw new Error('הבקשה כבר טופלה');
+    if (q.status !== 'pending' && q.status !== 'admin') throw new Error('הבקשה כבר טופלה');
     updateRequest_(id, 'cancelled');
     return { ok: true };
   });
@@ -397,6 +416,7 @@ function requestVacation(name, email, start, end, note) {
 
 function adminLoad(pw, periodId) {
   checkPw_(pw);
+  var sen = seniorityCheck_();
   var s = readSettings_();
   var pid = periodId || s.periodId;
   var sched = readSchedule_(pid);
@@ -414,6 +434,8 @@ function adminLoad(pw, periodId) {
     published: sched ? sched.published : false,
     scheduleUpdated: sched ? sched.updated : null,
     requests: readRequests_(),
+    seniority: sen,
+    pairHist: pairHistory_(pid, view.start),
     url: appUrl_(),
     adminUrl: adminUrl_(),
     scriptUrl: (function () { try { return ScriptApp.getService().getUrl(); } catch (e) { return ''; } })(),
@@ -456,16 +478,19 @@ function adminSaveEmployees(pw, list) {
   checkPw_(pw);
   var sh = getSheet_(SH.employees);
   var seen = {};
-  var oldPw = {};
-  vals_(sh).slice(1).forEach(function (r0) { if (r0[0]) oldPw[norm_(r0[0])] = r0[10] || ''; });
+  var oldPw = {}, oldSen = {};
+  vals_(sh).slice(1).forEach(function (r0) { if (r0[0]) { oldPw[norm_(r0[0])] = r0[10] || ''; oldSen[norm_(r0[0])] = { start: r0[8] || '', asked: r0[11] || '' }; } });
   var rows = (list || []).filter(function (e) { return norm_(e.name); }).map(function (e, i) {
     var n = norm_(e.name);
     if (seen[n]) throw new Error('השם "' + n + '" מופיע פעמיים');
     seen[n] = 1;
     return [n, String(e.email || '').trim().toLowerCase(), e.active ? 'כן' : 'לא', str_(e.min), str_(e.max),
       e.color || colorFor_(n, i), e.isNew ? 'חדש' : 'ותיק', str_(e.maxBlocks), isIso_(e.start) ? e.start : '', isIso_(e.ext) ? e.ext : '',
-      oldPw[n] || oldPw[norm_(e.origName || '')] || ''];
+      oldPw[n] || oldPw[norm_(e.origName || '')] || '',
+      (function () { var o = oldSen[n] || oldSen[norm_(e.origName || '')]; return o && o.start === (isIso_(e.start) ? e.start : '') ? o.asked : ''; })(),
+      e.consec ? 'כן' : ''];
   });
+  sh.getRange(1, 1, 1, EMP_HEADERS.length).setValues([EMP_HEADERS]).setFontWeight('bold').setBackground('#eeeeee');
   if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, EMP_HEADERS.length).clearContent();
   if (rows.length) sh.getRange(2, 1, rows.length, EMP_HEADERS.length).setNumberFormat('@').setValues(rows);
   return readEmployees_();
@@ -688,6 +713,7 @@ function installTriggers_() {
 }
 /** רץ כל בוקר: יום לפני הסגירה וביום הסגירה, מייל למי שעוד לא הגיש */
 function dailyJob() {
+  seniorityCheck_(true);
   var s = readSettings_();
   if (!s.reminders || !s.open || !s.deadline) return;
   var today = todayIso_();
@@ -860,6 +886,97 @@ function checkSwapValid_(sched, a, giveDate, b, takeDate) {
   if (g.indexOf(b) >= 0) throw new Error(b + ' כבר משובץ/ת ב-' + fmtD_(giveDate));
   if (t.indexOf(a) >= 0) throw new Error(a + ' כבר משובץ/ת ב-' + fmtD_(takeDate));
 }
+/* ================= ותק: אחרי 4 ו-5 חודשים שואלים, אחרי 6 הופך לותיק ================= */
+
+/** כמה חודשים מלאים עברו מתאריך (yyyy-mm-dd) עד היום */
+function monthsSince_(iso, today) {
+  var a = iso.split('-').map(Number), b = today.split('-').map(Number);
+  var m = (b[0] - a[0]) * 12 + (b[1] - a[1]);
+  if (b[2] < a[2]) m--;
+  return m;
+}
+function senStage_(months) { return months >= 6 ? 6 : months >= 5 ? 5 : months >= 4 ? 4 : 0; }
+/** מחזיר למי צריך לשאול, ומעביר לותיק אוטומטית את מי שעבר 6 חודשים */
+function seniorityCheck_(mailAdmin) {
+  var out = { ask: [], auto: [] };
+  try {
+    var sh = getSheet_(SH.employees), rows = vals_(sh), today = todayIso_(), wrote = false;
+    for (var i = 1; i < rows.length; i++) {
+      var n = norm_(rows[i][0]);
+      if (!n || rows[i][2] === 'לא' || rows[i][6] !== 'חדש' || !isIso_(rows[i][8])) continue;
+      var months = monthsSince_(rows[i][8], today), stage = senStage_(months);
+      if (stage === 6) {
+        sh.getRange(i + 1, 7).setValue('ותיק'); wrote = true;
+        out.auto.push({ name: n, start: rows[i][8] });
+      } else if (stage && (parseInt(rows[i][11], 10) || 0) < stage) {
+        out.ask.push({ name: n, start: rows[i][8], months: months, stage: stage });
+      }
+    }
+    if (wrote && MEMO_) delete MEMO_[sh.getName()];
+    if (mailAdmin && out.auto.length) adminNotify_('עדכון ותק', out.auto.map(function (x) { return x.name + ' עבר/ה 6 חודשים מתחילת העבודה (' + fmtD_(x.start) + ') ומעכשיו נחשב/ת ותיק/ה.'; }).join('\n'));
+  } catch (e) { Logger.log('seniority check failed: ' + e); }
+  return out;
+}
+/** תשובת האחראית: promote=true הופך לותיק, false שואל שוב בעוד חודש */
+function adminSeniority(pw, name, promote) {
+  checkPw_(pw);
+  return withLock_(function () {
+    var sh = getSheet_(SH.employees), rows = vals_(sh), n = norm_(name);
+    for (var i = 1; i < rows.length; i++) {
+      if (norm_(rows[i][0]) !== n) continue;
+      if (promote) sh.getRange(i + 1, 7).setValue('ותיק');
+      else {
+        var st = isIso_(rows[i][8]) ? senStage_(monthsSince_(rows[i][8], todayIso_())) : 0;
+        sh.getRange(i + 1, 12).setNumberFormat('@').setValue(String(Math.max(st, 4)));
+      }
+      return { employees: readEmployees_(), seniority: seniorityCheck_() };
+    }
+    throw new Error('העובד/ת לא נמצא/ה');
+  });
+}
+
+/** לכל עובד חדש: עם מי עבד ובכמה משמרות, בסידורים שפורסמו לפני התקופה המוצגת (מתאריך תחילת העבודה) */
+function pairHistory_(pid, before) {
+  var out = {};
+  try {
+    var news = readEmployees_().filter(function (e) { return e.isNew; });
+    if (!news.length || !before) return out;
+    news.forEach(function (e) { out[e.name] = {}; });
+    var rows = vals_(getSheet_(SH.schedules));
+    for (var i = 1; i < rows.length; i++) {
+      if (rows[i][0] === pid || rows[i][2] !== 'TRUE') continue;
+      var d = {};
+      try { d = JSON.parse(rows[i][1] || '{}'); } catch (err) { continue; }
+      var a = d && d.a ? d.a : d;
+      Object.keys(a || {}).forEach(function (date) {
+        if (!isIso_(date) || date >= before) return;
+        var arr = (a[date] || []).filter(Boolean);
+        news.forEach(function (e) {
+          if (arr.indexOf(e.name) < 0 || (e.start && date < e.start)) return;
+          arr.forEach(function (o) { if (o !== e.name) out[e.name][o] = (out[e.name][o] || 0) + 1; });
+        });
+      });
+    }
+  } catch (e) { Logger.log('pair history failed: ' + e); }
+  return out;
+}
+
+/** הימים שבהם יהיו שני חדשים ביחד אם הבקשה תבוצע */
+function newPairDays_(sched, q) {
+  var isNew = {};
+  readEmployees_().forEach(function (e) { if (e.isNew) isNew[e.name] = 1; });
+  var dates = [q.details.give].concat(q.type === 'swap' ? [q.details.take] : []);
+  var copy = { a: {}, o: {} };
+  dates.forEach(function (d) { copy.a[d] = (sched.a[d] || []).slice(); copy.o[d] = (sched.o[d] || []).slice(); });
+  applySwapSlot_(copy, q.details.give, q.from, q.to);
+  if (q.type === 'swap') applySwapSlot_(copy, q.details.take, q.to, q.from);
+  return dates.filter(function (d) { var a = copy.a[d]; return a.length > 1 && a[0] && a[1] && isNew[a[0]] && isNew[a[1]]; });
+}
+function adminNotify_(subject, body) {
+  try { var to = adminEmail_(); if (to) MailApp.sendEmail(to, subject, body + '\n\n' + adminUrl_()); } catch (e) { Logger.log('admin mail failed: ' + e); }
+}
+var NEWPAIR_MSG_ = 'ההחלפה הזו תשבץ שני עובדים חדשים באותה משמרת, ולכן היא עוברת לאישור האחראית.';
+
 /** ותיק בשורה הראשונה, חדש בשנייה */
 function orderDay_(sched, date) {
   var a = sched.a[date] || [], o = sched.o[date] || [];
@@ -988,7 +1105,9 @@ function readEmployees_() {
       maxBlocks: String(rows[i][7] || '').trim(),
       start: isIso_(rows[i][8]) ? rows[i][8] : '',
       ext: isIso_(rows[i][9]) ? rows[i][9] : '',
-      hasPw: !!rows[i][10]
+      hasPw: !!rows[i][10],
+      senAsked: parseInt(rows[i][11], 10) || 0,
+      consec: rows[i][12] === 'כן'
     });
   }
   return out;
