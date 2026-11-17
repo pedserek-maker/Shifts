@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f3f5f4; --card:#fff; --ink:#1d2b2a; --muted:#6b7a78; --line:#e1e6e4;
+    --pri:#0f5c57; --pri2:#e3efed;
+    --want:#2e8b57; --want-bg:#dff3e7; --block:#c0392b; --block-bg:#fbe3e0;
+    --vac:#2f5fa7; --vac-bg:#dde8f8; --wk:#f7f4ec; --warn:#b26a00; --warn-bg:#fff1d6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Heebo,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:16px}
+  header{background:var(--pri);color:#fff;padding:20px 18px 26px}
+  header h1{margin:0;font-size:22px;font-weight:800}
+  header p{margin:6px 0 0;opacity:.85;font-size:15px}
+  main{max-width:760px;margin:-14px auto 0;padding:0 12px 120px}
+  .card{background:var(--card);border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .card h2{margin:0 0 12px;font-size:18px}
+  .card h3{margin:16px 0 8px;font-size:16px}
+  label{display:block;font-size:14px;color:var(--muted);margin:10px 0 4px}
+  select,input,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff}
+  input[type=email]{direction:ltr;text-align:left}
+  button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:12px 18px;font-weight:700}
+  .btn{background:var(--pri);color:#fff}
+  .btn:disabled,button:disabled{opacity:.5;cursor:default}
+  .btn2{background:var(--pri2);color:var(--pri)}
+  .btn-s{padding:7px 12px;font-size:14px}
+  .no{background:var(--block-bg);color:var(--block)}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .sp{flex:1}
+  .msg{padding:10px 12px;border-radius:10px;margin-top:12px;font-size:15px;display:none}
+  .msg.err{display:block;background:var(--block-bg);color:var(--block)}
+  .msg.ok{display:block;background:var(--want-bg);color:#1d6b40}
+  .msg.info{display:block;background:var(--pri2);color:var(--pri)}
+  .tabs{display:flex;gap:4px;background:#fff;border-radius:12px;padding:4px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.06);position:sticky;top:6px;z-index:5}
+  .tabs button{flex:1;background:transparent;color:var(--muted);padding:10px 4px;font-size:15px;position:relative}
+  .tabs button.on{background:var(--pri);color:#fff}
+  .badge{display:inline-block;min-width:18px;height:18px;line-height:18px;border-radius:9px;background:var(--block);color:#fff;font-size:11px;margin-inline-start:4px;padding:0 4px}
+  .brushes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 12px}
+  .brush{padding:12px 6px;border:2px solid var(--line);background:#fff;color:var(--ink);font-weight:700}
+  .brush[data-v=W].on{border-color:var(--want);background:var(--want-bg);color:var(--want)}
+  .brush[data-v=B].on{border-color:var(--block);background:var(--block-bg);color:var(--block)}
+  .brush[data-v=C].on{border-color:var(--pri);background:var(--pri2);color:var(--pri)}
+  .counter{display:flex;justify-content:space-between;align-items:center;font-size:15px;margin-bottom:10px}
+  .pill{padding:4px 10px;border-radius:99px;background:var(--pri2);color:var(--pri);font-weight:700}
+  .pill.full{background:var(--block-bg);color:var(--block)}
+  .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+  .dh{text-align:center;font-size:13px;color:var(--muted);font-weight:700;padding:4px 0}
+  .day{min-height:64px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:5px 3px;text-align:center;cursor:pointer;user-select:none;display:flex;flex-direction:column;justify-content:space-between;transition:transform .05s}
+  .day:active{transform:scale(.96)}
+  .day.wk{background:var(--wk)}
+  .day .d{font-weight:700;font-size:15px}
+  .day .m{font-size:11px;color:var(--muted)}
+  .day .s{font-size:12px;font-weight:700;min-height:16px}
+  .day.W{background:var(--want-bg);border-color:var(--want)}.day.W .s{color:var(--want)}
+  .day.B{background:var(--block-bg);border-color:var(--block)}.day.B .s{color:var(--block)}
+  .day.V{background:var(--vac-bg);border-color:var(--vac);cursor:default}.day.V .s{color:var(--vac)}
+  .day.P .s{color:var(--warn)}
+  .day.X{opacity:.45;cursor:default}
+  .day.empty{visibility:hidden}
+  .tag{font-size:10px;background:#7a5c00;color:#fff;border-radius:6px;padding:0 4px;align-self:center}
+  .legend{font-size:13px;color:var(--muted);margin-top:10px;line-height:1.6}
+  .bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);padding:12px;display:none;z-index:6}
+  .bar .in{max-width:760px;margin:0 auto;display:flex;gap:10px;align-items:center}
+  .bar .btn{flex:1;padding:14px}
+  .hide{display:none!important}
+  .sch .day{cursor:default;min-height:74px;justify-content:flex-start;gap:3px;padding:4px 2px}
+  .nm{font-size:12px;line-height:1.25;font-weight:700;border-radius:6px;padding:2px 2px;overflow-wrap:anywhere}
+  .nm.me{outline:2px solid var(--ink)}
+  .day.today{border:3px solid var(--pri);box-shadow:0 0 0 2px rgba(15,92,87,.18)}
+  .day.today .d{color:var(--pri)}
+  .todaytag{font-size:10px;background:var(--pri);color:#fff;border-radius:6px;padding:0 4px;align-self:center}
+  .nm small{display:block;font-weight:400;font-size:10px;opacity:.85}
+  .item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .item:last-child{border-bottom:0}
+  .item .t{flex:1;line-height:1.45}
+  .item .t small{color:var(--muted);display:block}
+  .st{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}
+  .st.pending{background:var(--warn-bg);color:var(--warn)}
+  .st.approved{background:var(--want-bg);color:#1d6b40}
+  .st.declined,.st.rejected,.st.failed{background:var(--block-bg);color:var(--block)}
+  .st.cancelled{background:#eee;color:#777}
+  .cands{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:4px 10px;margin-top:8px}
+  .cand{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .cand:last-child{border-bottom:0}
+  .cand .chip{padding:3px 10px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;border:2px solid transparent}
+  .cand .chip.sel{border-color:var(--ink)}
+  .mode{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
+  .mode button{border:2px solid var(--line);background:#fff;color:var(--ink);padding:10px 4px}
+  .mode button.on{border-color:var(--pri);background:var(--pri2);color:var(--pri)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .empty-note{color:var(--muted);font-size:14px;padding:8px 0}
+  .persel{margin-bottom:12px}
+  .dl{display:inline-block;margin-top:8px;background:rgba(255,255,255,.18);padding:3px 10px;border-radius:99px;font-size:14px;font-weight:700}
+  @media (max-width:420px){.day .m{display:none}.day{min-height:56px}.day .d{font-size:13px}.nm{font-size:10.5px}.sch .d{font-size:12px}}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">הגשת אילוצים</h1>
+  <p id="period">טוען...</p>
+  <span class="dl hide" id="deadline"></span>
+</header>
+<main>
+  <div class="card hide" id="loadingCard" style="text-align:center;color:var(--muted);padding:40px 18px">טוען...</div>
+  <div class="card" id="loginCard">
+    <div id="loginDue" class="hide" style="background:var(--warn-bg);color:var(--warn);font-weight:700;padding:10px 12px;border-radius:10px;margin-bottom:12px;line-height:1.5"></div>
+    <h2>כניסה</h2>
+    <label for="name">שם</label>
+    <select id="name"><option value="">בחירה מהרשימה</option></select>
+    <div id="pwStep" class="hide">
+      <label for="pw">סיסמה</label>
+      <input id="pw" type="password" inputmode="numeric" autocomplete="current-password">
+      <div class="row" style="margin-top:14px"><button class="btn" id="go">כניסה</button><span class="sp"></span><a href="#" id="forgot" style="color:var(--pri);font-size:14px">שכחתי סיסמה</a></div>
+    </div>
+    <div id="setupStep" class="hide">
+      <div class="msg info" id="setupInfo" style="display:block"></div>
+      <div id="emailArea" class="hide"><label for="newEmail">המייל שלך</label><input id="newEmail" type="email" autocomplete="email" placeholder="name@mail.huji.ac.il"></div>
+      <div class="row" style="margin-top:10px"><button class="btn2" id="sendCode">שליחת קוד למייל</button></div>
+      <div id="codeArea" class="hide">
+        <label for="code">הקוד שקיבלת במייל</label>
+        <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6">
+        <label for="newPw">סיסמה חדשה (לפחות 4 תווים, אפשר 4 ספרות)</label>
+        <input id="newPw" type="password" inputmode="numeric" autocomplete="new-password">
+        <div class="row" style="margin-top:14px"><button class="btn" id="setPw">שמירה וכניסה</button></div>
+      </div>
+      <div style="margin-top:10px"><a href="#" id="backPw" class="hide" style="color:var(--pri);font-size:14px">חזרה לכניסה עם סיסמה</a></div>
+    </div>
+    <div class="msg" id="loginMsg"></div>
+  </div>
+
+  <div id="pubOnly" class="card hide"><h2>הסידור שפורסם</h2><select class="persel" data-persel></select><div class="cal sch" id="sched0"></div></div>
+
+  <div id="appArea" class="hide">
+    <div id="incBanner" class="hide" style="background:var(--block);color:#fff;font-weight:700;padding:12px 14px;border-radius:12px;margin-bottom:10px;cursor:pointer"></div>
+    <div class="tabs">
+      <button data-t="cons" class="on">אילוצים</button>
+      <button data-t="sched">הסידור</button>
+      <button data-t="swap">החלפות<span class="badge hide" id="swapBadge"></span></button>
+      <button data-t="vac">חופשה</button>
+    </div>
+
+    <!-- אילוצים -->
+    <div class="card" id="t-cons">
+      <div class="row"><h2 id="hello" style="margin:0"></h2><span class="sp"></span><a href="#" onclick="logout();return false" style="color:var(--muted);font-size:13px">יציאה / משתמש אחר</a></div>
+      <div id="dueBox" class="hide" style="background:var(--warn-bg);color:var(--warn);font-weight:700;padding:10px 12px;border-radius:10px;margin-bottom:12px"></div>
+      <div class="msg info" id="closedMsg" style="display:none"></div>
+      <div id="editor">
+        <div class="brushes">
+          <button class="brush on" data-v="B">חוסם</button>
+          <button class="brush" data-v="W">רוצה</button>
+          <button class="brush" data-v="C">יכול</button>
+        </div>
+        <div class="counter"><span>בחרו סוג ולחצו על הימים</span><span class="pill" id="cnt"></span></div>
+      </div>
+      <div class="cal" id="cal"></div>
+      <label for="consNote">הערה (לא חובה)</label>
+      <textarea id="consNote" rows="2" maxlength="1000" placeholder="משהו שחשוב שהאחראית תדע לגבי החודש הזה"></textarea>
+      <div class="legend">כל יום שלא סומן נחשב "יכול". לחיצה נוספת על יום מחזירה אותו ל"יכול".<br>ימי חופשה מאושרים מסומנים בכחול ולא נספרים בחסימות. לבקשת חופשה: לשונית "חופשה".</div>
+      <div class="msg" id="formMsg"></div>
+    </div>
+
+    <!-- סידור -->
+    <div class="card hide" id="t-sched">
+      <h2>הסידור</h2>
+      <div id="noSched" class="empty-note">הסידור לתקופה הזו עוד לא פורסם.</div>
+      <div id="schedWrap" class="hide">
+        <select class="persel" data-persel></select>
+        <h3 style="margin-top:0">המשמרות שלי</h3>
+        <div id="mine"></div>
+        <h3>כל הסידור</h3>
+        <div class="cal sch" id="sched"></div>
+      </div>
+    </div>
+
+    <!-- החלפות -->
+    <div class="card hide" id="t-swap">
+      <h2>החלפות ומסירות</h2>
+      <div id="swapNo" class="empty-note">אפשר להחליף משמרות רק אחרי שהסידור מתפרסם.</div>
+      <div id="swapYes" class="hide">
+        <label style="margin-top:0">חודש</label>
+        <select class="persel" data-persel></select>
+        <div id="incomingWrap"><h3 style="margin-top:0">בקשות אליי</h3><div id="incoming"></div></div>
+        <h3>בקשה חדשה</h3>
+        <div class="mode"><button id="mSwap" class="on">החלפה ראש בראש</button><button id="mGive">מסירת משמרת</button></div>
+        <label>המשמרת שלי</label>
+        <select id="giveSel"></select>
+        <div id="swapPart">
+          <label>המשמרת שאני לוקח/ת במקום (של מי?)</label>
+          <div class="cands" id="cands"></div>
+        </div>
+        <div id="givePart" class="hide">
+          <label>למי למסור?</label>
+          <select id="giveTo"></select>
+          <div class="legend">המשמרת עוברת לעובד/ת שבחרת אחרי שהוא/היא מאשר/ת, בלי שתצטרך/י לקחת משמרת אחרת במקום.</div>
+        </div>
+        <label>הערה (לא חובה)</label>
+        <input id="swapNote" maxlength="200">
+        <div class="row" style="margin-top:12px"><button class="btn" id="swapSend" disabled>שליחת בקשה</button></div>
+        <div class="msg" id="swapMsg"></div>
+        <h3>הבקשות שלי</h3>
+        <div id="outgoing"></div>
+      </div>
+      <div class="legend">השינוי נכנס לסידור ברגע שהעובד/ת השני/ה מאשר/ת. בסידור יופיע בקטן מי היה משובץ במקור.</div>
+    </div>
+
+    <!-- חופשה -->
+    <div class="card hide" id="t-vac">
+      <h2>בקשת חופשה</h2>
+      <div class="two">
+        <div><label>מתאריך</label><input type="date" id="vStart"></div>
+        <div><label>עד תאריך</label><input type="date" id="vEnd"></div>
+      </div>
+      <label>הערה (לא חובה)</label>
+      <input id="vNote" maxlength="200">
+      <div class="row" style="margin-top:12px"><button class="btn" id="vSend">שליחה לאישור האחראית</button></div>
+      <div class="msg" id="vMsg"></div>
+      <h3>הבקשות שלי</h3>
+      <div id="vList"></div>
+    </div>
+  </div>
+</main>
+<div class="bar" id="bar"><div class="in"><button class="btn" id="save">שליחת אילוצים</button></div></div>
+
+<script>
+var HEB_DAYS=['א','ב','ג','ד','ה','ו','ש'];
+var FULL_DAYS=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+var LAB={W:'רוצה',B:'חוסם',C:''};
+var ST={pending:'ממתין',approved:'אושר',declined:'נדחה',rejected:'לא אושר',failed:'לא בוצע',cancelled:'בוטל'};
+var S=null,values={},brush='B',me=null,dirty=false,schedule=null,colors={},myMax=8,shownMax=8,reqs=[],tab='cons',swapPick=null,pubs=[],canSubmit=false;
+
+/* הכתובת של Apps Script. אם הפריסה משתנה, מעדכנים כאן (בשני הקבצים) */
+var API_URL='https://script.google.com/macros/s/AKfycbyDWXQ0m1B_lzyptKMFDmBcqt288a9rzobnirNKIQgHNjE9Wi7z-7vbT_AlFowqMw/exec';
+/* בתוך Apps Script: google.script.run. באתר חיצוני (GitHub): פנייה ישירה לשרת, בלי חשבון גוגל */
+function run(fn){var args=[].slice.call(arguments,1);
+  if(window.google&&google.script&&google.script.run){
+    return new Promise(function(res,rej){google.script.run.withSuccessHandler(res).withFailureHandler(function(e){rej(e&&e.message?e:new Error(String(e)))})[fn].apply(null,args);});
+  }
+  return fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn:fn,args:args}),credentials:'omit',redirect:'follow'})
+    .then(function(r){if(!r.ok)throw new Error('http '+r.status);return r.json()},function(){throw new Error('אין חיבור לשרת. בדקו את האינטרנט ונסו שוב.')})
+    .then(function(j){if(!j.ok)throw new Error(j.error);return j.result});
+}
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function addDays(iso,n){var p=iso.split('-');var d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2]));d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
+function dow(iso){var p=iso.split('-');return new Date(Date.UTC(+p[0],+p[1]-1,+p[2])).getUTCDay()}
+function rangeDays(a,b){var o=[];if(!a||!b)return o;for(var d=a;d<=b&&o.length<120;d=addDays(d,1))o.push(d);return o}
+function days(){return rangeDays(S.start,S.end)}
+function fmt(iso){var p=iso.split('-');return +p[2]+'/'+(+p[1])}
+function dn(iso){return 'יום '+FULL_DAYS[dow(iso)]+' '+fmt(iso)}
+function isWk(d){var w=dow(d);return w===5||w===6||S.holidays.indexOf(d)>=0}
+function sDays(){return schedule?rangeDays(schedule.start,schedule.end):[]}
+function sWk(d){var w=dow(d);return w===5||w===6||(schedule.holidays||[]).indexOf(d)>=0}
+/* הסידור לפי התאריך של היום: זה שהיום בתוכו, אחרת הבא בתור, אחרת האחרון */
+function pickByDate(list,today){
+  var c=list.filter(function(p){return p.start<=today&&today<=p.end})[0];if(c)return c;
+  var n=list.filter(function(p){return p.start>today}).sort(function(a,b){return a.start<b.start?-1:1})[0];
+  return n||list[0]||null;
+}
+function perLabel(p){return fmt(p.start)+' עד '+fmt(p.end)}
+function fillPerSel(){
+  [].forEach.call(document.querySelectorAll('[data-persel]'),function(sel){
+    sel.innerHTML=pubs.map(function(p){return '<option value="'+esc(p.periodId)+'">סידור '+perLabel(p)+'</option>'}).join('');
+    if(schedule)sel.value=schedule.periodId;
+    sel.classList.toggle('hide',pubs.length<2);
+    sel.onchange=function(){loadSchedule(sel.value)};
+  });
+}
+function loadSchedule(pid){
+  return run('getPublishedSchedule',pid).then(function(sc){schedule=sc;swapPick=null;fillPerSel();
+    if(me){renderSched();renderSwap()}else renderGrid($('sched0'));});
+}
+function setDeadline(open){
+  var el=$('deadline');el.classList.remove('hide');
+  if(!open){el.textContent='הגשת האילוצים סגורה';return}
+  el.textContent=S.deadline?'הגשת אילוצים עד '+fmt(S.deadline)+' (כולל)':'הגשת האילוצים פתוחה';
+}
+function msg(el,type,text){el.className='msg '+type;el.textContent=text;el.style.display=text?'block':'none'}
+function blocks(){var n=0;for(var k in values)if(values[k]==='B')n++;return n}
+function store(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function load(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function textOn(hex){var h=(hex||'#fff').replace('#','');if(h.length===3)h=h.split('').map(function(c){return c+c}).join('');var r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);return (r*299+g*587+b*114)/1000>150?'#1d2b2a':'#fff'}
+function chipStyle(n){var c=colors[n]||'#e5e5e5';return 'background:'+c+';color:'+textOn(c)}
+function vacDays(status){var m={};reqs.forEach(function(q){if(q.type==='vacation'&&q.from===me.name&&q.status===status)rangeDays(q.details.start,q.details.end).forEach(function(d){m[d]=1})});return m}
+
+function initPublic(d){
+  S=d.settings;schedule=d.schedule;colors=d.colors||{};pubs=d.published||[];
+  $('title').textContent=S.title||'הגשת אילוצים';
+  $('period').textContent='תקופת אילוצים: '+fmt(S.start)+' עד '+fmt(S.end);
+  setDeadline(d.submitOpen);fillPerSel();
+  if(d.submitOpen&&S.deadline){var p=S.deadline.split('-');
+    $('loginDue').textContent='הגשת אילוצים לתקופה '+fmt(S.start)+' עד '+fmt(S.end)+' פתוחה עד יום '+FULL_DAYS[dow(S.deadline)]+' '+(+p[2])+'/'+(+p[1])+' (כולל)';
+    $('loginDue').classList.remove('hide');}
+  var sel=$('name');
+  allNames=d.employees.slice().sort(function(a,b){return a.localeCompare(b,'he')});
+  d.employees.slice().sort(function(a,b){return a.localeCompare(b,'he')}).forEach(function(n){var o=document.createElement('option');o.value=n;o.textContent=n;sel.appendChild(o)});
+  var ln=load('shift_name');
+  if(ln&&d.employees.indexOf(ln)>=0)sel.value=ln;
+}
+/* טעינה: מי שכבר מחובר מקבל הכל בבקשה אחת, בלי לראות קודם את מסך הכניסה */
+(function(){
+  var ln=load('shift_name'),lt=load('shift_token');
+  if(ln&&lt){
+    $('loginCard').classList.add('hide');$('loadingCard').classList.remove('hide');
+    run('getMyData',ln,lt,true).then(function(r){initPublic(r.pub);enterWith(r,lt)})
+      .catch(function(){
+        store('shift_token','');$('loadingCard').classList.add('hide');$('loginCard').classList.remove('hide');
+        run('getPublicData').then(function(d){initPublic(d);if(schedule){$('pubOnly').classList.remove('hide');renderGrid($('sched0'))}nameChosen()})
+          .catch(function(e){$('period').textContent='שגיאה בטעינה: '+e.message});
+      });
+  }else{
+    run('getPublicData').then(function(d){initPublic(d);if(schedule){$('pubOnly').classList.remove('hide');renderGrid($('sched0'))}if($('name').value)nameChosen()})
+      .catch(function(e){$('period').textContent='שגיאה בטעינה: '+e.message});
+  }
+})();
+
+/* ---------- כניסה ---------- */
+$('name').onchange=nameChosen;
+function nameChosen(){
+  var n=$('name').value;msg($('loginMsg'),'','');
+  $('pwStep').classList.add('hide');$('setupStep').classList.add('hide');
+  if(!n)return;
+  run('getLoginState',n).then(function(st){
+    if(st.hasPassword){$('pwStep').classList.remove('hide');$('pw').value='';$('pw').focus()}
+    else showSetup(st,false);
+  }).catch(function(e){msg($('loginMsg'),'err',e.message)});
+}
+function showSetup(st,forgot){
+  $('pwStep').classList.add('hide');$('setupStep').classList.remove('hide');$('codeArea').classList.add('hide');
+  $('backPw').classList.toggle('hide',!forgot);
+  $('sendCode').classList.remove('hide');
+  $('emailArea').classList.toggle('hide',st.hasEmail);
+  if(!st.hasEmail){$('setupInfo').textContent='כניסה ראשונה: הזינו את המייל שלכם, נשלח אליו קוד, ואז תבחרו סיסמה. המייל יישמר במערכת.';return}
+  $('setupInfo').textContent=(forgot?'איפוס סיסמה: ':'כניסה ראשונה: ')+'נשלח קוד למייל '+st.emailHint+', ואז תבחרו סיסמה.';
+}
+$('forgot').onclick=function(ev){ev.preventDefault();run('getLoginState',$('name').value).then(function(st){showSetup(st,true)})};
+$('backPw').onclick=function(ev){ev.preventDefault();nameChosen()};
+$('sendCode').onclick=function(){
+  $('sendCode').disabled=true;msg($('loginMsg'),'info','שולח...');
+  if(!$('emailArea').classList.contains('hide')&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test($('newEmail').value.trim())){msg($('loginMsg'),'err','הזינו מייל תקין');$('sendCode').disabled=false;return}
+  run('sendSetupCode',$('name').value,$('newEmail').value.trim()).then(function(r){msg($('loginMsg'),'ok','הקוד נשלח ל-'+r.emailHint+'. בדקו גם בספאם.');$('codeArea').classList.remove('hide');$('code').focus()})
+    .catch(function(e){msg($('loginMsg'),'err',e.message)}).then(function(){$('sendCode').disabled=false});
+};
+$('setPw').onclick=function(){
+  var c=$('code').value.trim(),p=$('newPw').value;
+  if(p.length<4){msg($('loginMsg'),'err','הסיסמה צריכה להיות לפחות 4 תווים');return}
+  $('setPw').disabled=true;
+  run('setPasswordWithCode',$('name').value,c,p).then(function(r){enter(r.name,r.token)})
+    .catch(function(e){msg($('loginMsg'),'err',e.message)}).then(function(){$('setPw').disabled=false});
+};
+$('go').onclick=function(){
+  var n=$('name').value,p=$('pw').value;
+  if(!n){msg($('loginMsg'),'err','בחרו שם מהרשימה');return}
+  if(!p){msg($('loginMsg'),'err','הזינו סיסמה');return}
+  $('go').disabled=true;msg($('loginMsg'),'info','בודק...');
+  run('login',n,p).then(function(r){enter(r.name,r.token)})
+    .catch(function(e){msg($('loginMsg'),'err',e.message)}).then(function(){$('go').disabled=false});
+};
+$('pw').onkeydown=function(e){if(e.key==='Enter')$('go').click()};
+function logout(){store('shift_token','');location.reload()}
+function enter(name,token,silent){
+  run('getMyData',name,token).then(function(r){enterWith(r,token)}).catch(function(err){
+    if(String(err.message).indexOf('AUTH')>=0){store('shift_token','');nameChosen();if(!silent)msg($('loginMsg'),'err','נא להתחבר מחדש')}
+    else msg($('loginMsg'),'err',err.message);
+  });
+}
+function enterWith(r,token){
+  {
+    me={name:r.name,token:token};store('shift_name',r.name);store('shift_token',token);
+    $('loadingCard').classList.add('hide');$('loginCard').classList.add('hide');$('pubOnly').classList.add('hide');$('appArea').classList.remove('hide');
+    $('hello').textContent='שלום '+r.name;
+    canSubmit=r.canSubmit;pubs=r.published||[];
+    // ברירת מחדל: הסידור של התקופה הנוכחית אם פורסם, אחרת האחרון שפורסם
+    var cur=pickByDate(pubs,S.today);
+    var preSched=schedule;schedule=null;
+    apply(r,true);
+    setDeadline(canSubmit);
+    var due=(r.ext&&r.ext>(S.deadline||''))?r.ext:S.deadline;
+    if(canSubmit&&due){var p=due.split('-');$('dueBox').textContent='אפשר להגיש ולעדכן אילוצים עד יום '+FULL_DAYS[dow(due)]+' '+(+p[2])+'/'+(+p[1])+' (כולל)';$('dueBox').classList.remove('hide')}
+    if(r.ext&&canSubmit)msg($('formMsg'),'info','האחראית פתחה לך הגשה עד '+fmt(r.ext)+'.');
+    else if(r.updated)msg($('formMsg'),'info','הגשת כבר ב-'+r.updated+'. אפשר לעדכן ולשלוח שוב.');
+    if(!canSubmit){$('closedMsg').style.display='block';$('closedMsg').textContent='הגשת האילוצים לתקופה הזו סגורה. פספסת? פנה/י לאחראית שתפתח לך. אפשר לצפות בסידור, להחליף משמרות ולבקש חופשה.';$('editor').classList.add('hide')}
+    var inc=incomingReqs();
+    var go=inc.length?'swap':(!canSubmit&&cur?'sched':'cons');
+    var pid=inc.length?inc[0].details.period:(cur&&cur.periodId);
+    showTab(go);
+    if(pid&&preSched&&preSched.periodId===pid){schedule=preSched;fillPerSel();renderSched();renderSwap()}
+    else if(pid)loadSchedule(pid);
+  }
+}
+function apply(r,resetValues){
+  myMax=r.maxBlocks;shownMax=r.shownBlocks||r.maxBlocks;reqs=r.requests||[];colors=r.colors||colors;if(r.published){pubs=r.published;fillPerSel()}if(r.canSubmit!==undefined)canSubmit=r.canSubmit;
+  if(resetValues){values={};days().forEach(function(d){values[d]=(r.values&&r.values[d])||'C'});$('consNote').value=r.note||''}
+  renderCal();renderSched();renderSwap();renderVac();
+}
+function refresh(){return run('getMyData',me.name,me.token).then(function(r){apply(r,false);if(schedule)return loadSchedule(schedule.periodId)})}
+
+[].forEach.call(document.querySelectorAll('.tabs button'),function(b){b.onclick=function(){showTab(b.dataset.t)}});
+function showTab(t){tab=t;[].forEach.call(document.querySelectorAll('.tabs button'),function(b){b.classList.toggle('on',b.dataset.t===t)});
+  ['cons','sched','swap','vac'].forEach(function(x){$('t-'+x).classList.toggle('hide',x!==t)});
+  if(me&&reqs)renderSwapBadge();
+  $('bar').style.display=(t==='cons'&&canSubmit)?'block':'none';}
+
+[].forEach.call(document.querySelectorAll('.brush'),function(b){b.onclick=function(){
+  brush=b.getAttribute('data-v');[].forEach.call(document.querySelectorAll('.brush'),function(x){x.classList.toggle('on',x===b)});
+}});
+
+/* ---------- constraints ---------- */
+function renderCal(){
+  var c=$('cal');c.innerHTML='';var va=vacDays('approved'),vp=vacDays('pending');
+  HEB_DAYS.forEach(function(h){var e=document.createElement('div');e.className='dh';e.textContent=h;c.appendChild(e)});
+  var ds=days();for(var i=0;i<dow(ds[0]);i++){var e=document.createElement('div');e.className='day empty';c.appendChild(e)}
+  ds.forEach(function(d){
+    var v=values[d]||'C',el=document.createElement('div'),hol=S.holidays.indexOf(d)>=0,lab=LAB[v],cls=v;
+    if(va[d]){cls='V';lab='חופשה'}else if(vp[d]&&v!=='B'){cls+=' P';lab=lab||'ממתין'}
+    el.className='day '+(isWk(d)?'wk ':'')+cls;
+    el.innerHTML='<div class="d">'+fmt(d)+'</div>'+(hol?'<span class="tag">חג</span>':'<div class="m">'+HEB_DAYS[dow(d)]+"'"+'</div>')+'<div class="s">'+lab+'</div>';
+    el.title=FULL_DAYS[dow(d)]+' '+fmt(d);
+    el.onclick=function(){if(!canSubmit||va[d])return;tap(d)};
+    c.appendChild(el);
+  });
+  var b=blocks();$('cnt').textContent=b+'/'+shownMax+' חסימות';$('cnt').classList.toggle('full',b>=shownMax);
+}
+function tap(d){
+  var cur=values[d]||'C',nv=(cur===brush)?'C':brush;
+  if(nv==='B'&&cur!=='B'&&blocks()>=myMax){msg($('formMsg'),'err','הגעת למקסימום החסימות. צריך עוד? פנו לאחראית.');return}
+  values[d]=nv;dirty=true;msg($('formMsg'),'','');renderCal();
+}
+$('save').onclick=function(){
+  $('save').disabled=true;msg($('formMsg'),'info','שולח...');
+  run('submitResponse',me.name,me.token,values,$('consNote').value).then(function(r){
+    dirty=false;msg($('formMsg'),'ok','האילוצים נשמרו ('+r.updated+'). '+r.blocks+' חסימות. אפשר לחזור ולעדכן עד סגירת ההגשה.');
+  }).catch(function(e){msg($('formMsg'),'err',e.message)}).then(function(){$('save').disabled=false});
+};
+window.addEventListener('beforeunload',function(e){if(dirty){e.preventDefault();e.returnValue=''}});
+
+/* ---------- schedule ---------- */
+function slots(d){return (schedule&&schedule.a[d])||[]}
+function origOf(d,k){return schedule&&schedule.o&&schedule.o[d]?schedule.o[d][k]:null}
+function renderGrid(c){
+  c.innerHTML='';
+  HEB_DAYS.forEach(function(h){var e=document.createElement('div');e.className='dh';e.textContent=h;c.appendChild(e)});
+  var ds=sDays();if(!ds.length)return;for(var i=0;i<dow(ds[0]);i++){var e=document.createElement('div');e.className='day empty';c.appendChild(e)}
+  ds.forEach(function(d){
+    var isToday=S&&d===S.today;
+    var el=document.createElement('div');el.className='day'+(sWk(d)?' wk':'')+(isToday?' today':'');
+    var html='<div class="d">'+fmt(d)+'</div>';
+    slots(d).forEach(function(n,k){if(!n)return;var o=origOf(d,k);
+      html+='<div class="nm'+(me&&n===me.name?' me':'')+'" style="'+chipStyle(n)+'">'+esc(n)+(o?'<small>(במקום '+esc(o)+')</small>':'')+'</div>'});
+    el.innerHTML=html;c.appendChild(el);
+  });
+}
+function myShifts(){var o=[];if(!schedule)return o;sDays().forEach(function(d){if(slots(d).indexOf(me.name)>=0)o.push(d)});return o}
+function renderSched(){
+  $('noSched').textContent=pubs.length?'טוען...':'עוד לא פורסם סידור.';
+  $('noSched').classList.toggle('hide',!!schedule);$('schedWrap').classList.toggle('hide',!schedule);
+  if(!schedule)return;
+  renderGrid($('sched'));
+  var m=myShifts();
+  $('mine').innerHTML=m.length?m.map(function(d){var k=slots(d).indexOf(me.name),o=origOf(d,k),partner=slots(d).filter(function(x){return x&&x!==me.name});
+    return '<div class="item"><div class="t"><b>'+dn(d)+'</b>'+(o?' <small>החלפת את '+esc(o)+'</small>':'')+(partner.length?'<small>עם '+esc(partner.join(', '))+'</small>':'')+'</div><a class="btn2 btn-s" style="text-decoration:none" target="_blank" href="'+gcalLink(d,partner,o)+'">ליומן</a><button class="btn2 btn-s" data-give="'+d+'">החלפה</button></div>'}).join(''):'<div class="empty-note">אין לך משמרות בתקופה הזו.</div>';
+
+  [].forEach.call($('mine').querySelectorAll('[data-give]'),function(b){b.onclick=function(){showTab('swap');setMode(false);$('giveSel').value=b.dataset.give;swapPick=null;renderCands()}});
+}
+
+/* ---------- calendar ---------- */
+function hours(d){var wk=sWk(d);var st=wk?S.wkStart:S.shiftStart,en=wk?S.wkEnd:S.shiftEnd;return st&&en?[st,en]:null}
+function gcalLink(d,partner,orig){
+  var h=hours(d),dates;
+  if(h){var end=h[1]<=h[0]?addDays(d,1):d;dates=d.replace(/-/g,'')+'T'+h[0].replace(':','')+'00/'+end.replace(/-/g,'')+'T'+h[1].replace(':','')+'00'}
+  else dates=d.replace(/-/g,'')+'/'+addDays(d,1).replace(/-/g,'');
+  var det=(partner.length?'עם '+partner.join(', '):'משמרת לבד')+(orig?' | במקום '+orig:'');
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent('משמרת מיון ילדים')+'&dates='+dates+'&ctz=Asia/Jerusalem&details='+encodeURIComponent(det);
+}
+/* ---------- swaps ---------- */
+function renderSwapBadge(){var n=incomingReqs().length;var ib=$('incBanner');ib.classList.toggle('hide',!n||tab==='swap');
+  document.querySelector('.tabs button[data-t=swap]').style.color=n&&tab!=='swap'?'var(--block)':'';}
+/* בקשות שממתינות לי: החלפה/מסירה אליי, או מסירה פתוחה לכולם ביום שאני לא עובד/ת בו */
+function incomingReqs(){
+  return reqs.filter(function(q){return q.status==='pending'&&q.from!==me.name&&(
+    ((q.type==='swap'||q.type==='give')&&q.to===me.name)||
+    (q.type==='give'&&q.to==='*'&&!(schedule&&q.details.period===schedule.periodId&&slots(q.details.give).indexOf(me.name)>=0)))});
+}
+function renderSwap(){
+  $('swapNo').classList.toggle('hide',!!schedule);$('swapYes').classList.toggle('hide',!schedule);
+  var incAll=incomingReqs();
+  var inc=incAll.filter(function(q){return !schedule||q.details.period===schedule.periodId});
+  $('swapBadge').textContent=incAll.length;$('swapBadge').classList.toggle('hide',!incAll.length);
+  var ib=$('incBanner');ib.classList.toggle('hide',!incAll.length||tab==='swap');
+  ib.textContent=incAll.length===1?'יש בקשה אחת שמחכה לאישור שלך. לחצו כאן':'יש '+incAll.length+' בקשות שמחכות לאישור שלך. לחצו כאן';
+  ib.onclick=function(){var q=incAll[0];showTab('swap');if(q&&(!schedule||q.details.period!==schedule.periodId))loadSchedule(q.details.period)};
+  document.querySelector('.tabs button[data-t=swap]').style.color=incAll.length&&tab!=='swap'?'var(--block)':'';
+  if(!schedule)return;
+  $('incoming').innerHTML=inc.length?inc.map(function(q){
+    if(q.type==='give')return '<div class="item"><div class="t"><b>'+esc(q.from)+'</b> מחפש/ת מישהו שייקח משמרת'+(q.to==='*'?' (נשלח לכל הפנויים)':'')+':<small>'+dn(q.details.give)+', בלי להחזיר משמרת</small>'+(q.note?'<small>"'+esc(q.note)+'"</small>':'')+'</div>'+
+      '<button class="btn btn-s" data-ok="'+q.id+'" data-give="1">לקחת</button>'+(q.to==='*'?'':'<button class="no btn-s" data-no="'+q.id+'">דחייה</button>')+'</div>';
+    return '<div class="item"><div class="t"><b>'+esc(q.from)+'</b> מציע/ה החלפה:<small>את/ה לוקח/ת: '+dn(q.details.give)+'</small><small>'+esc(q.from)+' לוקח/ת: '+dn(q.details.take)+'</small>'+(q.note?'<small>"'+esc(q.note)+'"</small>':'')+'</div>'+
+      '<button class="btn btn-s" data-ok="'+q.id+'">אישור</button><button class="no btn-s" data-no="'+q.id+'">דחייה</button></div>'}).join(''):'<div class="empty-note">אין בקשות ממתינות.</div>';
+  [].forEach.call($('incoming').querySelectorAll('[data-ok],[data-no]'),function(b){b.onclick=function(){
+    var ok=!!b.dataset.ok,id=b.dataset.ok||b.dataset.no;
+    if(ok&&!confirm(b.dataset.give?'לקחת את המשמרת? הסידור יתעדכן מיד.':'לאשר את ההחלפה? הסידור יתעדכן מיד.'))return;
+    b.disabled=true;run('respondSwap',me.name,me.token,id,ok).then(function(r){msg($('swapMsg'),'ok',r.status==='approved'?'בוצע, והסידור עודכן.':'הבקשה נדחתה.');return refresh()}).catch(function(e){msg($('swapMsg'),'err',e.message);refresh()})}});
+  var gs=$('giveSel'),prev=gs.value,m=myShifts();
+  gs.innerHTML=m.length?m.map(function(d){return '<option value="'+d+'">'+dn(d)+'</option>'}).join(''):'<option value="">אין לך משמרות</option>';
+  if(m.indexOf(prev)>=0)gs.value=prev;
+  renderCands();renderGiveTo();
+  var out=reqs.filter(function(q){return (q.type==='swap'||q.type==='give')&&q.from===me.name}).slice().reverse().slice(0,15);
+  var past=reqs.filter(function(q){return (q.type==='swap'||q.type==='give')&&q.to===me.name&&q.status!=='pending'}).slice().reverse().slice(0,10);
+  var all=out.concat(past);
+  $('outgoing').innerHTML=all.length?all.map(function(q){var mine=q.from===me.name;
+    if(q.type==='give')return '<div class="item"><div class="t">'+(mine?'מסרתי '+dn(q.details.give)+' <small>'+(q.to==='*'?'לכל הפנויים':'ל'+esc(q.to))+'</small>':esc(q.from)+': לקחתי ממנו/ה '+dn(q.details.give))+'</div><span class="st '+q.status+'">'+ST[q.status]+'</span>'+
+      (mine&&q.status==='pending'?'<button class="no btn-s" data-cancel="'+q.id+'">ביטול</button>':'')+'</div>';
+    return '<div class="item"><div class="t">'+(mine?'מסרתי '+dn(q.details.give)+' ולקחתי '+dn(q.details.take)+' <small>מול '+esc(q.to)+'</small>':esc(q.from)+': לקחתי '+dn(q.details.give)+' ומסרתי '+dn(q.details.take))+'</div><span class="st '+q.status+'">'+ST[q.status]+'</span>'+
+      (mine&&q.status==='pending'?'<button class="no btn-s" data-cancel="'+q.id+'">ביטול</button>':'')+'</div>'}).join(''):'<div class="empty-note">עוד לא שלחת בקשות.</div>';
+  [].forEach.call($('outgoing').querySelectorAll('[data-cancel]'),function(b){b.onclick=function(){b.disabled=true;run('cancelRequest',me.name,me.token,b.dataset.cancel).then(refresh).catch(function(e){msg($('swapMsg'),'err',e.message)})}});
+}
+$('giveSel').onchange=function(){swapPick=null;renderCands();renderGiveTo()};
+var giveMode=false;
+function setMode(g){giveMode=g;$('mSwap').classList.toggle('on',!g);$('mGive').classList.toggle('on',g);
+  $('swapPart').classList.toggle('hide',g);$('givePart').classList.toggle('hide',!g);renderCands();renderGiveTo()}
+$('mSwap').onclick=function(){setMode(false)};$('mGive').onclick=function(){setMode(true)};
+var allNames=[];
+function renderGiveTo(){
+  if(!giveMode)return;
+  var give=$('giveSel').value,on=give?slots(give):[];
+  var free=allNames.filter(function(n){return n!==me.name&&on.indexOf(n)<0});
+  $('giveTo').innerHTML='<option value="">בחירת עובד/ת</option>'+free.map(function(n){return '<option value="'+esc(n)+'">'+esc(n)+'</option>'}).join('');
+  updGiveBtn();
+}
+function updGiveBtn(){var give=$('giveSel').value,to=$('giveTo').value;
+  $('swapSend').disabled=!(give&&to);$('swapSend').textContent=give&&to?'לבקש מ'+to+' לקחת את '+fmt(give):'שליחת בקשה';}
+$('giveTo').onchange=updGiveBtn;
+function renderCands(){
+  if(giveMode)return;
+  var give=$('giveSel').value,c=$('cands');
+  if(!give){c.innerHTML='<div class="empty-note">אין משמרת להחלפה.</div>';$('swapSend').disabled=true;return}
+  var onGive=slots(give),html='',any=false;
+  sDays().forEach(function(d){
+    if(d===give||slots(d).indexOf(me.name)>=0)return;
+    var people=slots(d).filter(function(n){return n&&onGive.indexOf(n)<0});
+    if(!people.length)return;any=true;
+    html+='<div class="cand"><span style="min-width:110px">'+dn(d)+'</span>'+people.map(function(n){var sel=swapPick&&swapPick.d===d&&swapPick.n===n;
+      return '<span class="chip'+(sel?' sel':'')+'" style="'+chipStyle(n)+'" data-d="'+d+'" data-n="'+esc(n)+'">'+esc(n)+'</span>'}).join('')+'</div>';
+  });
+  c.innerHTML=any?html:'<div class="empty-note">אין משמרות זמינות להחלפה.</div>';
+  [].forEach.call(c.querySelectorAll('.chip'),function(ch){ch.onclick=function(){swapPick={d:ch.dataset.d,n:ch.dataset.n};renderCands()}});
+  $('swapSend').disabled=!swapPick;
+  $('swapSend').textContent=swapPick?'לבקש מ'+swapPick.n+': '+fmt(give)+' תמורת '+fmt(swapPick.d):'שליחת בקשה';
+}
+$('swapSend').onclick=function(){
+  var give=$('giveSel').value;
+  if(giveMode){
+    var to=$('giveTo').value;if(!give||!to)return;$('swapSend').disabled=true;
+    run('requestGive',me.name,me.token,schedule.periodId,give,to,$('swapNote').value).then(function(){
+      msg($('swapMsg'),'ok','הבקשה נשלחה ל'+to+'. המשמרת תעבור אחרי האישור שלו/ה.');$('swapNote').value='';return refresh();
+    }).catch(function(e){msg($('swapMsg'),'err',e.message);$('swapSend').disabled=false});
+    return;
+  }
+  if(!swapPick)return;$('swapSend').disabled=true;
+  run('requestSwap',me.name,me.token,schedule.periodId,give,swapPick.d,swapPick.n,$('swapNote').value).then(function(){
+    msg($('swapMsg'),'ok','הבקשה נשלחה ל'+swapPick.n+'. ההחלפה תיכנס לסידור אחרי האישור שלו/ה.');swapPick=null;$('swapNote').value='';return refresh();
+  }).catch(function(e){msg($('swapMsg'),'err',e.message);$('swapSend').disabled=false});
+};
+
+/* ---------- vacation ---------- */
+function renderVac(){
+  var l=reqs.filter(function(q){return q.type==='vacation'&&q.from===me.name}).slice().reverse();
+  $('vList').innerHTML=l.length?l.map(function(q){return '<div class="item"><div class="t">'+fmt(q.details.start)+(q.details.end!==q.details.start?' עד '+fmt(q.details.end):'')+(q.note?'<small>'+esc(q.note)+'</small>':'')+'</div><span class="st '+q.status+'">'+ST[q.status]+'</span>'+(q.status==='pending'?'<button class="no btn-s" data-vc="'+q.id+'">ביטול</button>':'')+'</div>'}).join(''):'<div class="empty-note">אין בקשות חופשה.</div>';
+  [].forEach.call($('vList').querySelectorAll('[data-vc]'),function(b){b.onclick=function(){b.disabled=true;run('cancelRequest',me.name,me.token,b.dataset.vc).then(refresh).catch(function(e){msg($('vMsg'),'err',e.message)})}});
+}
+$('vStart').onchange=function(){if(!$('vEnd').value||$('vEnd').value<$('vStart').value)$('vEnd').value=$('vStart').value};
+$('vSend').onclick=function(){
+  var a=$('vStart').value,b=$('vEnd').value||a;
+  if(!a){msg($('vMsg'),'err','בחרו תאריך');return}
+  $('vSend').disabled=true;
+  run('requestVacation',me.name,me.token,a,b,$('vNote').value).then(function(){msg($('vMsg'),'ok','הבקשה נשלחה לאישור.');$('vNote').value='';return refresh()})
+    .catch(function(e){msg($('vMsg'),'err',e.message)}).then(function(){$('vSend').disabled=false});
+};
+</script>
+</body>
+</html>

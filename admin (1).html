@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f3f5f4; --card:#fff; --ink:#1d2b2a; --muted:#6b7a78; --line:#e1e6e4;
+    --pri:#0f5c57; --pri2:#e3efed; --warn:#b26a00; --warn-bg:#fff1d6;
+    --want:#2e8b57; --want-bg:#dff3e7; --block:#c0392b; --block-bg:#fbe3e0; --wk:#f7f4ec;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Heebo,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+  header{background:var(--pri);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  header h1{margin:0;font-size:20px;font-weight:800}
+  header .per{opacity:.85;font-size:14px}
+  nav{display:flex;gap:4px;margin-inline-start:auto}
+  nav button{background:transparent;color:#fff;opacity:.75;padding:8px 14px;border-radius:8px}
+  nav button.on{background:rgba(255,255,255,.18);opacity:1}
+  main{padding:16px 20px 60px;max-width:1500px;margin:0 auto}
+  .card{background:var(--card);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .card h2{margin:0 0 12px;font-size:17px}
+  button{font:inherit;cursor:pointer;border:0;border-radius:9px;padding:9px 14px;font-weight:700}
+  .btn{background:var(--pri);color:#fff}
+  .btn2{background:var(--pri2);color:var(--pri)}
+  .btn3{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .danger{background:var(--block-bg);color:var(--block)}
+  button:disabled{opacity:.5;cursor:default}
+  input,select{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  label.f{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .sp{flex:1}
+  .hide{display:none!important}
+  .muted{color:var(--muted);font-size:13px}
+  #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1d2b2a;color:#fff;padding:10px 18px;border-radius:10px;font-weight:500;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+  #toast.on{opacity:1}
+  #toast.err{background:var(--block)}
+  .dirty{color:var(--warn);font-weight:700}
+
+  /* login */
+  #login{max-width:360px;margin:80px auto}
+  #login input{width:100%}
+
+  /* schedule */
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 450px;gap:14px;align-items:start}
+  @media (max-width:1100px){.layout{grid-template-columns:1fr}}
+  .grid{display:grid;grid-template-columns:repeat(7,minmax(118px,1fr));gap:6px;overflow-x:auto}
+  .dh{text-align:center;font-weight:800;padding:4px 0;font-size:15px}
+  .cell{border:1px solid var(--line);border-radius:10px;padding:6px;background:#fff;min-height:96px}
+  .cell.wk{background:var(--wk)}
+  .cell.sel{outline:2px solid var(--pri)}
+  .cell.today{border:3px solid var(--pri)}
+  .todaytag{font-size:10px;background:var(--pri);color:#fff;border-radius:6px;padding:0 5px}
+  .cell.empty{visibility:hidden}
+  .cell .top{display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:4px}
+  .cell .date{font-weight:800;font-size:15px}
+  .cell .av{font-size:11px;color:var(--muted)}
+  .tag{font-size:10px;background:#7a5c00;color:#fff;border-radius:6px;padding:0 5px}
+  .slot{width:100%;margin-top:4px;padding:6px;border-radius:7px;font-weight:700;font-size:14px;border:2px solid transparent}
+  .slot.bad{border-color:var(--block)}
+  .slot.soft{border-color:#e69a1c}
+  .slot.none{background:#fff;border:1px dashed #bbb;color:var(--muted);font-weight:500}
+  table{border-collapse:collapse;width:100%}
+  th,td{padding:5px 4px;text-align:center;border-bottom:1px solid var(--line);font-size:14px}
+  th{font-size:12px;color:var(--muted);font-weight:700}
+  td.nm{text-align:right;white-space:nowrap}
+  .dot{display:inline-block;width:11px;height:11px;border-radius:3px;margin-inline-end:6px;vertical-align:-1px}
+  .bad-t{color:var(--block);font-weight:800}
+  .warn-t{color:var(--warn);font-weight:800}
+  #stats td,#stats th{padding:5px 3px;font-size:13px}
+  #stats th{font-size:11px}
+  .wl{margin:0;padding:0;list-style:none;max-height:260px;overflow:auto}
+  .wl li{padding:5px 8px;border-radius:7px;margin-bottom:4px;font-size:13px;background:var(--warn-bg);cursor:pointer}
+  .wl li.b{background:var(--block-bg)}
+  .det h3{margin:0 0 6px;font-size:15px}
+  .det .g{margin:4px 0;font-size:13px;line-height:1.6}
+  .chip{display:inline-block;padding:1px 8px;border-radius:99px;margin:2px;font-size:12px;cursor:pointer;border:1px solid transparent}
+  .chip.W{background:var(--want-bg);color:#1d6b40}
+  .chip.C{background:#eef1f0}
+  .chip.B{background:var(--block-bg);color:var(--block);text-decoration:line-through;cursor:default}
+  .chip.N{background:#f3f3f3;color:#999}
+  .chip.V{background:#dde8f8;color:#2f5fa7;text-decoration:line-through;cursor:default}
+  .orig{font-size:11px;color:var(--muted);text-align:center;margin-top:1px}
+  .mx td.V{background:#dde8f8;color:#2f5fa7}
+  .badge{display:inline-block;min-width:18px;height:18px;line-height:18px;border-radius:9px;background:#e74c3c;color:#fff;font-size:11px;margin-inline-start:4px;padding:0 4px}
+  .rq{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+  .rq .t{flex:1;line-height:1.5}
+  .st{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}
+  .st.pending{background:var(--warn-bg);color:var(--warn)}
+  .st.approved{background:var(--want-bg);color:#1d6b40}
+  .st.declined,.st.rejected,.st.failed{background:var(--block-bg);color:var(--block)}
+  .st.cancelled{background:#eee;color:#777}
+  .prevrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-bottom:8px;padding:6px 8px;background:#fafafa;border-radius:8px}
+  .prevrow .pc{padding:1px 7px;border-radius:6px;font-weight:700;font-size:12px}
+  .newtag{font-size:10px;background:#1d2b2a;color:#fff;border-radius:5px;padding:0 4px;margin-inline-start:4px}
+
+  /* matrix */
+  .mx{overflow:auto;max-height:72vh}
+  .mx table{width:auto}
+  .mx th,.mx td{padding:3px;min-width:34px;font-size:12px;border:1px solid #eee}
+  .mx td.nm,.mx th.nm{position:sticky;right:0;background:#fff;z-index:1;min-width:130px;font-size:13px}
+  .mx thead th{position:sticky;top:0;background:#fafafa;z-index:2}
+  .mx thead th.nm{z-index:3}
+  .mx td.v{cursor:pointer;font-weight:700}
+  .mx td.W{background:var(--want-bg);color:#1d6b40}
+  .mx td.B{background:var(--block-bg);color:var(--block)}
+  .mx td.N{background:#f6f6f6}
+  .mx th.wkh{background:#f1ead6}
+
+  /* employees */
+  .et input[type=text],.et input[type=email]{width:100%}
+  .et input[type=text]{min-width:120px}
+  .et input[type=email]{min-width:200px}
+  .et input[type=date]{min-width:130px}
+  .et input[type=number]{width:70px}
+  .et input[type=color]{width:42px;height:32px;padding:1px}
+
+  /* settings */
+  .sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+  .hcal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;max-width:520px}
+  .hcal div{padding:8px 0;text-align:center;border-radius:8px;border:1px solid var(--line);cursor:pointer;font-size:13px}
+  .hcal div.h{background:#7a5c00;color:#fff;border-color:#7a5c00}
+  .hcal div.w{background:var(--wk)}
+  .hcal div.x{visibility:hidden}
+  .hcal div.hd{border:0;cursor:default;font-weight:700;color:var(--muted)}
+  .link{direction:ltr;flex:1;min-width:200px;font-size:12px}
+
+  .cell .dn{display:none}
+  .scrollx{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  /* ===== טלפון ===== */
+  @media (max-width:760px){
+    header{padding:10px 12px;gap:6px}
+    header h1{font-size:18px}
+    header .per{order:3;width:100%;font-size:12px}
+    nav{width:100%;margin:0;overflow-x:auto}
+    nav button{flex:1;white-space:nowrap;padding:8px 6px;font-size:14px}
+    main{padding:10px 8px 60px}
+    .card{padding:12px;border-radius:12px}
+    button{padding:8px 10px;font-size:14px}
+    input,select,textarea{font-size:16px}
+    #perSel,#perSel2{max-width:100%}
+    .grid{grid-template-columns:1fr;overflow:visible;gap:6px}
+    .dh,.cell.empty{display:none}
+    .cell{min-height:auto;display:grid;grid-template-columns:1fr 1fr;gap:4px 6px;align-items:center;padding:8px}
+    .cell.sun{margin-top:12px}
+    .cell .top{margin:0}
+    .cell .av{text-align:left}
+    .cell .dn{display:inline;font-weight:500;color:var(--muted);font-size:13px}
+    .cell .slot{margin-top:0;font-size:15px;padding:8px 6px}
+    .cell.one .slot,.cell.one>div:last-child{grid-column:1/-1}
+    .det.inline{grid-column:1/-1;margin:0 0 6px;border:2px solid var(--pri)}
+    .mx{max-height:none}
+    .hcal div{padding:10px 0}
+    .rq{flex-wrap:wrap}
+    .rq .t{flex-basis:100%}
+  }
+  @media print{
+    header,nav,.noprint,.side{display:none!important}
+    body{background:#fff}
+    .layout{display:block}
+    .card{box-shadow:none;padding:0}
+    .slot{border:0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;appearance:none;-webkit-appearance:none;text-align:center}
+    .cell{min-height:auto;break-inside:avoid}
+    .cell .av{display:none}
+  }
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<div id="verModal" class="hide" style="position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:20;display:flex;align-items:flex-start;justify-content:center;padding:40px 12px;overflow:auto">
+  <div class="card" style="max-width:560px;width:100%">
+    <div class="row"><h2 style="margin:0">גרסאות קודמות של הסידור</h2><span class="sp"></span><button class="btn3" id="verClose">סגירה</button></div>
+    <p class="muted">גרסה נשמרת אוטומטית לפני כל פרסום, לפני כל שמירה של סידור מפורסם, ולפני כל החלפה או מסירה. "שחזור" טוען את הגרסה למסך. היא נשמרת רק אחרי שתלחצי "שמירה".</p>
+    <div id="verList"></div>
+  </div>
+</div>
+
+<div id="login" class="card">
+  <h2>כניסת אחראית</h2>
+  <label class="f" for="pw">סיסמה</label>
+  <input id="pw" type="password" autocomplete="current-password">
+  <div class="row" style="margin-top:12px"><button class="btn" id="loginBtn">כניסה</button></div>
+  <div class="muted" id="loginErr" style="margin-top:10px;color:var(--block)"></div>
+</div>
+
+<div id="app" class="hide">
+<header>
+  <h1>סידור עבודה</h1>
+  <span class="per" id="perLabel"></span>
+  <nav>
+    <button data-tab="sched" class="on">סידור</button>
+    <button data-tab="resp">אילוצים</button>
+    <button data-tab="reqs">בקשות<span class="badge hide" id="reqBadge"></span></button>
+    <button data-tab="emps">עובדים</button>
+    <button data-tab="sett">הגדרות</button>
+  </nav>
+</header>
+<main>
+
+<!-- ============ SCHEDULE ============ -->
+<section id="tab-sched">
+  <div class="card noprint">
+    <div class="row" style="margin-bottom:10px"><b>תקופה:</b><select id="perSel"></select><span class="muted" id="perNote"></span></div>
+    <div class="row">
+      <button class="btn" id="autoFill" title="ממלא רק משבצות ריקות. שיבוצים שקבעת נשארים.">שיבוץ אוטומטי (ריקות)</button>
+      <button class="btn2" id="autoAll" title="מוחק הכל ומשבץ מחדש">שיבוץ מחדש מאפס</button>
+      <button class="btn3" id="clearAll">ניקוי</button>
+      <label class="muted"><input type="checkbox" id="inclMissing"> לשבץ גם מי שלא הגיש (כ"יכול")</label>
+      <label class="muted" title="כשמסומן, כל שינוי ידני שלך יוצג בסידור כ'(במקום X)', כמו החלפה של העובדים"><input type="checkbox" id="markSwap"> לסמן שינויים ידניים כ"במקום"</label>
+      <span class="sp"></span>
+      <span id="dirtyLbl" class="dirty hide">יש שינויים שלא נשמרו</span>
+      <button class="btn" id="saveSched">שמירה</button>
+      <button class="btn2" id="pubBtn">פרסום לעובדים</button>
+      <button class="btn3" id="exportBtn">ייצוא לגיליון</button>
+      <button class="btn3" id="verBtn">גרסאות קודמות</button>
+      <button class="btn3" onclick="window.print()">הדפסה</button>
+    </div>
+    <div class="muted" id="schedInfo" style="margin-top:8px"></div>
+  </div>
+  <div class="layout">
+    <div class="card"><div id="prevRow"></div><div class="grid" id="grid"></div></div>
+    <div class="side">
+      <div class="card det" id="det"><h3>פרטי יום</h3><div class="muted">לחצי על תאריך כדי לראות מי רוצה, מי יכול ומי חוסם.</div></div>
+      <div class="card"><h2>מאזן משמרות</h2><div class="scrollx"><table id="stats"></table></div>
+        <div class="muted" style="margin-top:8px">סופ"ש = שישי, שבת וחג. רצופים = יום אחרי יום. שב' ריקים = שבועות בלי משמרת. רוצה = כמה ימי "רוצה" קיבל/ה מתוך כמה שביקש/ה. יכול = כמה משמרות קיבל/ה בימים שסימן/ה "יכול". סופ"ש 2 חודשים קודמים = סך הסופ"שים בשתי התקופות הקודמות, והשיבוץ האוטומטי מאזן לפיו.</div></div>
+      <div class="card"><h2>התראות <span id="wcount" class="muted"></span></h2><ul class="wl" id="warns"></ul></div>
+      <div class="card" id="notesCard"><h2>הערות מהעובדים</h2><div id="notes"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RESPONSES ============ -->
+<section id="tab-resp" class="hide">
+  <div class="card">
+    <div class="row">
+      <h2 style="margin:0">אילוצים שהוגשו</h2>
+      <select id="perSel2" title="תקופה"></select>
+      <span class="muted" id="respSum"></span>
+      <span class="sp"></span>
+      <span class="muted">לחיצה על משבצת משנה אותה (יכול > רוצה > חוסם), למשל למי ששלח בווטסאפ. מישהו פספס את ההגשה? בחרי לו תאריך בעמודה "הגשה פתוחה לו עד".</span>
+      <button class="btn" id="saveResp" disabled>שמירת שינויים</button>
+    </div>
+  </div>
+  <div class="card mx"><table id="mx"></table></div>
+</section>
+
+<!-- ============ REQUESTS ============ -->
+<section id="tab-reqs" class="hide">
+  <div class="card"><h2>חופשות לאישור</h2><div id="vacPending"></div></div>
+  <div class="card"><h2>חופשות שטופלו</h2><div id="vacApproved"></div></div>
+  <div class="card"><h2>החלפות ומסירות שממתינות</h2><p class="muted">את יכולה לאשר החלפה או מסירה גם אם העובד השני עוד לא אישר. הסידור יתעדכן מיד, ושניהם יקבלו מייל (אם המיילים פעילים).</p><div id="swapPending"></div></div>
+  <div class="card"><h2>יומן החלפות ומסירות</h2><p class="muted">החלפות מתבצעות אוטומטית כששני העובדים מאשרים. אם צריך לבטל החלפה, שני את הסידור ידנית בלשונית סידור.</p><div id="swapLog"></div></div>
+</section>
+
+<!-- ============ EMPLOYEES ============ -->
+<section id="tab-emps" class="hide">
+  <div class="card">
+    <div class="row"><h2 style="margin:0">עוזרי רופא</h2><span class="sp"></span>
+      <button class="btn2" id="addEmp">הוספת עובד/ת</button><button class="btn" id="saveEmps">שמירה</button></div>
+    <p class="muted">ותק "חדש": השיבוץ האוטומטי ישתדל לא לשבץ שני חדשים באותו יום. מקסימום חסימות ריק = ברירת המחדל מההגדרות. מתחיל מתאריך: לפני התאריך הזה לא ישובץ, ומספר המשמרות היעד שלו יחסי.<br>כניסת עובדים: בכניסה הראשונה העובד מקבל קוד למייל ובוחר סיסמה. אם אין לו מייל כאן, הוא מזין מייל בעצמו, והמייל נשמר אחרי שאימת את הקוד. מי ששכח סיסמה יכול לאפס לבד דרך המייל, או שתאפסי לו כאן.</p>
+    <div class="scrollx"><table class="et" id="et"></table></div>
+  </div>
+</section>
+
+<!-- ============ SETTINGS ============ -->
+<section id="tab-sett" class="hide">
+  <div class="card">
+    <h2>תקופה נוכחית</h2>
+    <div class="sgrid">
+      <div><label class="f">כותרת לעובדים</label><input id="sTitle" style="width:100%"></div>
+      <div><label class="f">מתאריך</label><input id="sStart" type="date" style="width:100%"></div>
+      <div><label class="f">עד תאריך</label><input id="sEnd" type="date" style="width:100%"></div>
+      <div><label class="f">מקסימום חסימות בפועל (ברירת מחדל)</label><input id="sMax" type="number" min="0" style="width:100%"></div>
+      <div><label class="f">מספר החסימות שהעובדים רואים</label><input id="sShown" type="number" min="0" style="width:100%"><div class="muted" style="font-size:12px">העובדים רואים מונה מתוך המספר הזה, אבל המערכת מאפשרת עד המקסימום בפועל.</div></div>
+      <div><label class="f">הגשת אילוצים</label><label><input type="checkbox" id="sOpen"> פתוחה לעובדים</label></div>
+      <div><label class="f">נסגר להגשה אחרי (כולל היום הזה)</label><input id="sDeadline" type="date" style="width:100%"></div>
+      <div><label class="f">התראות במייל</label><label><input type="checkbox" id="sMail"> לשלוח מייל על בקשות החלפה וחופשה</label></div>
+      <div><label class="f">תזכורות</label><label><input type="checkbox" id="sRemind"> מייל למי שלא הגיש, יום לפני הסגירה וביום הסגירה (9:00 בבוקר)</label></div>
+      <div><label class="f">המייל שלך להתראות (ריק = מייל החשבון)</label><input id="sAdminMail" type="email" dir="ltr" style="width:100%"></div>
+    </div>
+    <div class="muted" id="weekHint" style="margin-top:8px"></div>
+    <div class="row" style="margin-top:8px"><button class="btn3" id="alignWeeks">יישור לשבועות מלאים (ראשון עד שבת)</button></div>
+    <h2 style="margin-top:20px">חגים</h2>
+    <p class="muted">לחצי על ימים כדי לסמן חג (או ערב חג). ביום כזה משובץ/ת עוזר/ת אחד/ת והוא נספר כסופ"ש.</p>
+    <div class="hcal" id="hcal"></div>
+    <div class="row" style="margin-top:16px">
+      <button class="btn" id="saveSett">שמירת הגדרות</button>
+      <span class="sp"></span>
+      <button class="danger" id="newPeriod" title="יוצר תקופה חדשה ריקה. האילוצים והסידור של התקופה הקודמת נשמרים בגיליון.">פתיחת תקופה חדשה</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>כל התקופות</h2>
+    <p class="muted">התקופה הנוכחית היא זו שהעובדים מגישים אליה אילוצים, וההגדרות למעלה חלות עליה. אפשר להפוך כל תקופה לנוכחית, ולמחוק תקופות ניסיון.</p>
+    <div class="scrollx"><table id="perTable"></table></div>
+  </div>
+  <div class="card">
+    <h2>שעות משמרת (לייצוא ליומן)</h2>
+    <p class="muted">אם משאירים ריק, המשמרת תופיע ביומן של העובדים כאירוע של יום שלם (מתאים לסופ"ש שהשעות בו משתנות). משמרת שנגמרת אחרי חצות נרשמת עד למחרת.</p>
+    <div class="sgrid">
+      <div><label class="f">חול: התחלה</label><input id="hS" type="time" style="width:100%"></div>
+      <div><label class="f">חול: סיום</label><input id="hE" type="time" style="width:100%"></div>
+      <div><label class="f">סופ"ש/חג: התחלה (ריק = יום שלם)</label><input id="wS" type="time" style="width:100%"></div>
+      <div><label class="f">סופ"ש/חג: סיום</label><input id="wE" type="time" style="width:100%"></div>
+    </div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="saveHours">שמירת שעות</button></div>
+  </div>
+  <div class="card">
+    <h2>קישורים</h2>
+    <label class="f">כתובת האתר ב-GitHub (אחרי ההקמה). המיילים לעובדים יפנו אליה.</label>
+    <div class="row"><input id="sSite" class="link" dir="ltr" placeholder="https://..."><button class="btn" id="saveSite">שמירה</button></div>
+    <label class="f">קישור לעובדים (לשלוח בקבוצה)</label>
+    <div class="row"><input id="lnkEmp" class="link" readonly><button class="btn2" data-copy="lnkEmp">העתקה</button></div>
+    <label class="f">קישור ניהול (לא לשתף)</label>
+    <div class="row"><input id="lnkAdm" class="link" readonly><button class="btn2" data-copy="lnkAdm">העתקה</button></div>
+    <label class="f">גיליון הנתונים</label>
+    <div class="row"><input id="lnkSheet" class="link" readonly><button class="btn2" data-copy="lnkSheet">העתקה</button></div>
+  </div>
+  <div class="card">
+    <h2>שינוי סיסמה</h2>
+    <div class="row"><input id="newPw" type="password" placeholder="סיסמה חדשה"><button class="btn2" id="chPw">עדכון</button></div>
+  </div>
+</section>
+</main>
+</div>
+
+<script>
+/* ===== מנוע שיבוץ אוטומטי ===== */
+var Scheduler = (function () {
+  'use strict';
+
+  function addDays(iso, n) {
+    var p = iso.split('-');
+    var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]));
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  }
+  function dow(iso) {
+    var p = iso.split('-');
+    return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])).getUTCDay();
+  }
+  function listDays(start, end) {
+    var out = [];
+    if (!start || !end || start > end) return out;
+    for (var d = start; d <= end; d = addDays(d, 1)) out.push(d);
+    return out;
+  }
+  function isWeekend(iso, holidays) {
+    var w = dow(iso);
+    return w === 5 || w === 6 || (holidays && holidays.indexOf(iso) >= 0);
+  }
+  function slotsFor(iso, holidays) {
+    return isWeekend(iso, holidays) ? 1 : 2;
+  }
+
+  /* weights */
+  var W = {
+    unfilled: 10000,
+    belowMin: 300,
+    totalDev: 25,
+    weekendDev: 40,
+    consecutive: 70,
+    emptyWeek: 90,
+    want: -6,
+    wantFair: 140,
+    newPair: 600
+  };
+
+  /*
+   input = {
+     days: ['2026-12-06', ...],
+     holidays: [...],
+     employees: [{name, min, max}],
+     avail: {name: {date: 'W'|'C'|'B'}},   missing employee => treated per includeMissing
+     fixed: {date: [name|null, name|null]}  existing assignments kept as-is
+     includeMissing: bool
+     iterations: number of restarts
+   }
+   returns {date: [names]}
+  */
+  function solve(input) {
+    var days = input.days, hol = input.holidays || [];
+    var emps = input.employees.filter(function (e) {
+      return input.includeMissing || input.avail[e.name];
+    });
+    var E = emps.length;
+    if (!E) return { assignment: copyFixed(input), cost: null, note: 'אין עובדים עם אילוצים' };
+
+    var dayIdx = {}; days.forEach(function (d, i) { dayIdx[d] = i; });
+    var weekOf = days.map(function (d, i) { return Math.floor(i / 7); });
+    var nWeeks = Math.ceil(days.length / 7);
+    var weekendDay = days.map(function (d) { return isWeekend(d, hol); });
+
+    // availability matrix: 0 block, 1 can, 2 want
+    var av = emps.map(function (e) {
+      var a = input.avail[e.name] || {};
+      var vac = (input.vacations && input.vacations[e.name]) || {};
+      return days.map(function (d) {
+        if (vac[d] || (e.start && d < e.start)) return 0;
+        var v = a[d] || 'C';
+        return v === 'B' || v === 'V' ? 0 : v === 'W' ? 2 : 1;
+      });
+    });
+    var nameIdx = {}; emps.forEach(function (e, i) { nameIdx[e.name] = i; });
+
+    // slots
+    var slots = [], totalSlots = 0, weekendSlots = 0;
+    days.forEach(function (d, di) {
+      var n = slotsFor(d, hol);
+      var fx = (input.fixed && input.fixed[d]) || [];
+      for (var k = 0; k < n; k++) {
+        var f = fx[k];
+        var fi = (f && nameIdx.hasOwnProperty(f)) ? nameIdx[f] : (f ? -2 : -1); // -2 = fixed person not in pool
+        slots.push({ day: di, k: k, fixed: !!f, who: fi });
+        totalSlots++; if (weekendDay[di]) weekendSlots++;
+      }
+    });
+
+    // עובד שמתחיל באמצע התקופה מקבל יעד יחסי
+    var frac = emps.map(function (e) {
+      if (!e.start) return 1;
+      var n = 0; days.forEach(function (d) { if (d >= e.start) n++; }); return n / days.length;
+    });
+    var fracW = emps.map(function (e) {
+      var n = 0, t = 0; days.forEach(function (d, di) { if (weekendDay[di]) { t++; if (!e.start || d >= e.start) n++; } }); return t ? n / t : 1;
+    });
+    var sumF = frac.reduce(function (x, y) { return x + y; }, 0) || 1;
+    var sumFW = fracW.reduce(function (x, y) { return x + y; }, 0) || 1;
+    var isNew = emps.map(function (e) { return !!e.isNew; });
+    var minS = emps.map(function (e, i) { return Math.floor(num(e.min, 0) * frac[i]); });
+    var maxS = emps.map(function (e) { return num(e.max, 99); });
+    var target = emps.map(function (e, i) { return Math.min(Math.max(totalSlots * frac[i] / sumF, minS[i]), maxS[i]); });
+    // סופ"שים: איזון על פני התקופה הקודמת + הנוכחית. מי שעשה פחות בחודש הקודם יקבל יותר עכשיו.
+    var prevW = emps.map(function (e) { return (input.prevWeekend && input.prevWeekend[e.name]) || 0; });
+    var sumPrevW = prevW.reduce(function (x, y) { return x + y; }, 0);
+    var tW = emps.map(function (e, i) { return Math.max(0, (weekendSlots + sumPrevW) * fracW[i] / sumFW - prevW[i]); });
+    // מי עבד ביום האחרון של התקופה הקודמת (כדי לא לשבץ אותו ביום הראשון ברצף)
+    var lastPrev = emps.map(function (e) {
+      var d = days.length ? addDays(days[0], -1) : null;
+      return !!(d && input.prevTail && (input.prevTail[d] || []).indexOf(e.name) >= 0);
+    });
+    // כמה "רוצה" יש לכל אחד (בימים שהוא באמת זמין), ומה אפשר לתת לו לכל היותר
+    var wantCap = emps.map(function (e, i) {
+      var n = 0; for (var di = 0; di < days.length; di++) if (av[i][di] === 2) n++;
+      return Math.min(n, Math.max(1, Math.round(target[i])));
+    });
+    var fixedNew = slots.map(function (sl) { return sl.who === -2 && input.newNames && input.newNames.indexOf(input.fixed[days[sl.day]][sl.k]) >= 0; });
+    // weeks where person is available at least one day
+    var availWeek = emps.map(function (e, i) {
+      var w = []; for (var x = 0; x < nWeeks; x++) w.push(false);
+      days.forEach(function (d, di) { if (av[i][di] > 0) w[weekOf[di]] = true; });
+      return w;
+    });
+
+    function personCost(i, onDays) {
+      // onDays: sorted array of day indexes
+      var n = onDays.length, c = 0;
+      c += W.totalDev * Math.pow(n - target[i], 2);
+      if (n < minS[i]) c += W.belowMin * (minS[i] - n);
+      var w = 0, cons = 0, wants = 0, weeks = [];
+      for (var x = 0; x < nWeeks; x++) weeks.push(0);
+      for (var j = 0; j < n; j++) {
+        var di = onDays[j];
+        if (weekendDay[di]) w++;
+        if (j > 0 && onDays[j - 1] === di - 1) cons++;
+        if (di === 0 && lastPrev[i]) cons++;
+        if (av[i][di] === 2) wants++;
+        weeks[weekOf[di]]++;
+      }
+      c += W.weekendDev * Math.pow(w - tW[i], 2);
+      c += W.consecutive * cons;
+      c += W.want * wants;
+      // שוויון ב"רוצה": כל אחד מקבל חלק דומה ממה שביקש. החוסר נקנס בריבוע, כך שמי שקיבל הכי מעט מקבל עדיפות.
+      if (wantCap[i] > 0) c += W.wantFair * Math.pow(1 - Math.min(1, wants / wantCap[i]), 2);
+      for (x = 0; x < nWeeks; x++) if (!weeks[x] && availWeek[i][x]) c += W.emptyWeek;
+      return c;
+    }
+
+    function totalCost(state) {
+      var per = emps.map(function () { return []; });
+      var c = 0;
+      for (var s = 0; s < slots.length; s++) {
+        var w = state[s];
+        if (w === -1) c += W.unfilled;
+        else if (w >= 0) per[w].push(slots[s].day);
+      }
+      for (var i = 0; i < E; i++) { per[i].sort(function (a, b) { return a - b; }); c += personCost(i, per[i]); }
+      // חדש עם חדש באותו יום
+      for (s = 0; s + 1 < slots.length; s++) {
+        if (slots[s].day !== slots[s + 1].day) continue;
+        var n1 = state[s] >= 0 ? isNew[state[s]] : fixedNew[s];
+        var n2 = state[s + 1] >= 0 ? isNew[state[s + 1]] : fixedNew[s + 1];
+        if (n1 && n2) c += W.newPair;
+      }
+      return c;
+    }
+
+    function eligible(state, s, i) {
+      var sl = slots[s];
+      if (av[i][sl.day] === 0) return false;
+      var cnt = 0;
+      for (var t = 0; t < slots.length; t++) {
+        if (t === s) continue;
+        if (state[t] === i) {
+          cnt++;
+          if (slots[t].day === sl.day) return false;
+        }
+      }
+      return cnt < maxS[i];
+    }
+
+    var best = null, bestCost = Infinity;
+    var restarts = input.iterations || 25;
+
+    for (var r = 0; r < restarts; r++) {
+      var state = slots.map(function (sl) { return sl.who; });
+      // greedy: order free slots by scarcity
+      var free = [];
+      slots.forEach(function (sl, s) { if (!sl.fixed) { state[s] = -1; free.push(s); } });
+      free.forEach(function (s) { slots[s].scar = 0; for (var i = 0; i < E; i++) if (av[i][slots[s].day] > 0) slots[s].scar++; });
+      free.sort(function (a, b) { return (slots[a].scar - slots[b].scar) || (Math.random() - 0.5); });
+      free.forEach(function (s) {
+        var bi = -1, bc = Infinity;
+        for (var i = 0; i < E; i++) {
+          if (!eligible(state, s, i)) continue;
+          state[s] = i;
+          var c = totalCost(state) + Math.random() * 30;
+          if (c < bc) { bc = c; bi = i; }
+        }
+        state[s] = bi;
+      });
+
+      // local search: single replacements and swaps
+      var cur = totalCost(state), improved = true, rounds = 0;
+      while (improved && rounds < 30) {
+        improved = false; rounds++;
+        for (var a = 0; a < free.length; a++) {
+          var s1 = free[a], old = state[s1];
+          for (var i2 = -1; i2 < E; i2++) {
+            if (i2 === old) continue;
+            if (i2 >= 0 && !eligible(state, s1, i2)) continue;
+            state[s1] = i2;
+            var c2 = totalCost(state);
+            if (c2 < cur - 1e-9) { cur = c2; old = i2; improved = true; }
+            else state[s1] = old;
+          }
+        }
+        for (a = 0; a < free.length; a++) {
+          for (var b = a + 1; b < free.length; b++) {
+            var x = free[a], y = free[b], px = state[x], py = state[y];
+            if (px === py || px < 0 || py < 0) continue;
+            state[x] = -3; state[y] = -3;
+            var okx = eligible(state, x, py), oky = eligible(state, y, px);
+            state[x] = px; state[y] = py;
+            if (!okx || !oky) continue;
+            // check same-day clash after swap
+            state[x] = py; state[y] = px;
+            var c3 = totalCost(state);
+            if (c3 < cur - 1e-9 && validDay(state, x) && validDay(state, y)) { cur = c3; improved = true; }
+            else { state[x] = px; state[y] = py; }
+          }
+        }
+      }
+      if (cur < bestCost) { bestCost = cur; best = state.slice(); }
+    }
+
+    function validDay(state, s) {
+      var d = slots[s].day, w = state[s];
+      for (var t = 0; t < slots.length; t++) if (t !== s && slots[t].day === d && state[t] === w && w >= 0) return false;
+      return true;
+    }
+
+    var out = {};
+    days.forEach(function (d) { out[d] = []; });
+    slots.forEach(function (sl, s) {
+      var d = days[sl.day];
+      if (sl.fixed) out[d][sl.k] = input.fixed[d][sl.k];
+      else out[d][sl.k] = best[s] >= 0 ? emps[best[s]].name : null;
+    });
+    return { assignment: out, cost: bestCost };
+  }
+
+  function copyFixed(input) {
+    var out = {};
+    input.days.forEach(function (d) { out[d] = ((input.fixed && input.fixed[d]) || []).slice(); });
+    return out;
+  }
+  function num(v, def) { var n = parseFloat(v); return isNaN(n) ? def : n; }
+
+  /* statistics + warnings for any assignment (manual or auto) */
+  function analyze(days, holidays, employees, avail, assignment, vacations, prevTail) {
+    var newSet = {}; employees.forEach(function (e) { if (e.isNew) newSet[e.name] = 1; });
+    var startOf = {}; employees.forEach(function (e) { if (e.start) startOf[e.name] = e.start; });
+    var stats = {};
+    employees.forEach(function (e) {
+      stats[e.name] = { name: e.name, total: 0, weekend: 0, consecutive: 0, wants: 0, blocked: 0, emptyWeeks: 0, min: num(e.min, 0), max: num(e.max, 99), dates: [] };
+    });
+    var warnings = [];
+    var weeks = Math.ceil(days.length / 7);
+    days.forEach(function (d, di) {
+      var n = slotsFor(d, holidays);
+      var arr = assignment[d] || [];
+      var seen = {};
+      for (var k = 0; k < n; k++) {
+        var who = arr[k];
+        if (!who) { warnings.push({ type: 'empty', date: d, text: 'משבצת ריקה' }); continue; }
+        if (seen[who]) warnings.push({ type: 'dup', date: d, text: who + ' משובץ/ת פעמיים באותו יום' });
+        seen[who] = 1;
+        var st = stats[who];
+        if (!st) { stats[who] = st = { name: who, total: 0, weekend: 0, consecutive: 0, wants: 0, blocked: 0, emptyWeeks: 0, min: 0, max: 99, dates: [] }; }
+        st.total++; st.dates.push(di);
+        if (isWeekend(d, holidays)) st.weekend++;
+        var v = avail[who] && avail[who][d];
+        if (v === 'W') st.wants++;
+        if (v === 'B') { st.blocked++; warnings.push({ type: 'blocked', date: d, text: who + ' חסם/ה את היום הזה' }); }
+        if (vacations && vacations[who] && vacations[who][d]) warnings.push({ type: 'blocked', date: d, text: who + ' בחופשה מאושרת' });
+        if (startOf[who] && d < startOf[who]) warnings.push({ type: 'blocked', date: d, text: who + ' מתחיל/ה רק ב-' + startOf[who].split('-').reverse().slice(0, 2).join('/') });
+      }
+      if (n === 2 && arr[0] && arr[1] && newSet[arr[0]] && newSet[arr[1]]) warnings.push({ type: 'newpair', date: d, text: 'שני חדשים ביחד: ' + arr[0] + ', ' + arr[1] });
+    });
+    Object.keys(stats).forEach(function (k) {
+      var st = stats[k];
+      st.dates.sort(function (a, b) { return a - b; });
+      for (var j = 1; j < st.dates.length; j++) if (st.dates[j] === st.dates[j - 1] + 1) st.consecutive++;
+      st.boundary = false;
+      if (st.dates[0] === 0 && prevTail && days.length && (prevTail[addDays(days[0], -1)] || []).indexOf(k) >= 0) { st.consecutive++; st.boundary = true; }
+      st.canDays = 0;
+      st.dates.forEach(function (di) { var v = avail[k] && avail[k][days[di]]; if (!v || v === 'C') st.canDays++; });
+      var w = []; for (var x = 0; x < weeks; x++) w.push(0);
+      st.dates.forEach(function (di) { w[Math.floor(di / 7)]++; });
+      st.weekCounts = w;
+      st.emptyWeeks = w.filter(function (c) { return c === 0; }).length;
+      if (st.total > st.max) warnings.push({ type: 'max', text: k + ': ' + st.total + ' משמרות, מעל המקסימום (' + st.max + ')' });
+    });
+    return { stats: stats, warnings: warnings };
+  }
+
+  return { solve: solve, analyze: analyze, listDays: listDays, addDays: addDays, dow: dow, isWeekend: isWeekend, slotsFor: slotsFor };
+})();
+if (typeof module !== 'undefined') module.exports = Scheduler;
+
+</script>
+<script>
+var LET=['א','ב','ג','ד','ה','ו','ש'];
+var HEB=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+var PW='', D=null, A={}, O={}, VAC={}, dirty=false, respDirty={}, selDay=null, empDraft=null, holDraft=[];
+
+/* הכתובת של Apps Script. אם הפריסה משתנה, מעדכנים כאן (בשני הקבצים) */
+var API_URL='https://script.google.com/macros/s/AKfycbyDWXQ0m1B_lzyptKMFDmBcqt288a9rzobnirNKIQgHNjE9Wi7z-7vbT_AlFowqMw/exec';
+/* בתוך Apps Script: google.script.run. באתר חיצוני (GitHub): פנייה ישירה לשרת, בלי חשבון גוגל */
+function run(fn){var args=[].slice.call(arguments,1);
+  if(window.google&&google.script&&google.script.run){
+    return new Promise(function(res,rej){google.script.run.withSuccessHandler(res).withFailureHandler(function(e){rej(e&&e.message?e:new Error(String(e)))})[fn].apply(null,args);});
+  }
+  return fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn:fn,args:args}),credentials:'omit',redirect:'follow'})
+    .then(function(r){if(!r.ok)throw new Error('http '+r.status);return r.json()},function(){throw new Error('אין חיבור לשרת. בדקו את האינטרנט ונסו שוב.')})
+    .then(function(j){if(!j.ok)throw new Error(j.error);return j.result});
+}
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function fmt(iso){var p=iso.split('-');return +p[2]+'/'+(+p[1])}
+function toast(t,err){var e=$('toast');e.textContent=t;e.className='on'+(err?' err':'');clearTimeout(e._t);e._t=setTimeout(function(){e.className=''},3200)}
+function fail(e){toast(e.message||String(e),true)}
+function days(){return Scheduler.listDays(D.view.start,D.view.end)}
+function hol(){return D.view.holidays||[]}
+function activeEmps(){return D.employees.filter(function(e){return e.active})}
+function color(n){for(var i=0;i<D.employees.length;i++)if(D.employees[i].name===n)return D.employees[i].color;return '#ddd'}
+function avail(){var o={};Object.keys(D.responses).forEach(function(n){o[n]=D.responses[n].values});return o}
+function val(n,d){if(VAC[n]&&VAC[n][d])return 'V';var e=empOf(n);if(e&&e.start&&d<e.start)return 'V';var r=D.responses[n];return r?(r.values[d]||'C'):'N'}
+function empOf(n){for(var i=0;i<D.employees.length;i++)if(D.employees[i].name===n)return D.employees[i];return null}
+function rangeDays(a,b){return Scheduler.listDays(a,b)}
+function buildVac(){VAC={};(D.requests||[]).forEach(function(q){if(q.type==='vacation'&&q.status==='approved'){VAC[q.from]=VAC[q.from]||{};rangeDays(q.details.start,q.details.end).forEach(function(d){VAC[q.from][d]=1})}})}
+function textOn(hex){var h=(hex||'#fff').replace('#','');if(h.length===3)h=h.split('').map(function(c){return c+c}).join('');var r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);return (r*299+g*587+b*114)/1000>150?'#1d2b2a':'#fff'}
+function setDirty(v){dirty=v;$('dirtyLbl').classList.toggle('hide',!v)}
+function sget(k){try{return sessionStorage.getItem(k)}catch(e){return null}}
+function sset(k,v){try{sessionStorage.setItem(k,v)}catch(e){}}
+
+/* ---------- login ---------- */
+function doLogin(pw){
+  $('loginBtn').disabled=true;$('loginErr').textContent='';
+  run('adminLoad',pw).then(function(d){PW=pw;sset('adm_pw',pw);boot(d)})
+    .catch(function(e){$('loginErr').textContent=e.message;$('login').classList.remove('hide')})
+    .then(function(){$('loginBtn').disabled=false});
+}
+$('loginBtn').onclick=function(){doLogin($('pw').value)};
+$('pw').onkeydown=function(e){if(e.key==='Enter')doLogin($('pw').value)};
+(function(){var p=sget('adm_pw');if(p){$('login').classList.add('hide');doLogin(p)}})();
+
+function boot(d){
+  D=d;A={};O={};buildVac();
+  days().forEach(function(x){A[x]=(d.schedule&&d.schedule[x]?d.schedule[x].slice():[]);O[x]=(d.orig&&d.orig[x]?d.orig[x].slice():[])});
+  $('login').classList.add('hide');$('app').classList.remove('hide');
+  var st=d.settings,open=st.open&&(!st.deadline||st.today<=st.deadline);
+  $('perLabel').textContent='תקופה נוכחית: '+fmt(st.start)+' עד '+fmt(st.end)+(open?' | הגשה פתוחה'+(st.deadline?' עד '+fmt(st.deadline):''):' | הגשה סגורה');
+  var opts=(d.periods||[]).map(function(p){return '<option value="'+esc(p.periodId)+'">'+fmt(p.start)+' עד '+fmt(p.end)+(p.current?' (נוכחית)':'')+(p.published?' - פורסם':(p.hasSchedule?'':' - בלי סידור'))+'</option>'}).join('');
+  ['perSel','perSel2'].forEach(function(id){$(id).innerHTML=opts;$(id).value=d.view.periodId});
+  $('perNote').textContent=d.view.current?'':'את צופה בתקופה קודמת. שינויים כאן לא משפיעים על ההגדרות של התקופה הנוכחית.';
+  setDirty(false);respDirty={};
+  empDraft=null;renderSched();renderResp();renderEmps();renderSett();renderReqs();
+}
+
+$('perSel').onchange=$('perSel2').onchange=function(ev){
+  var id=ev.target.value;
+  if((dirty||Object.keys(respDirty).length)&&!confirm('יש שינויים שלא נשמרו. לעבור תקופה בכל זאת?')){ev.target.value=D.view.periodId;return}
+  run('adminLoad',PW,id).then(function(d){boot(d);toast(d.view.current?'התקופה הנוכחית':'תקופה '+fmt(d.view.start)+' עד '+fmt(d.view.end))}).catch(fail);
+};
+/* ---------- tabs ---------- */
+[].forEach.call(document.querySelectorAll('nav button'),function(b){b.onclick=function(){
+  [].forEach.call(document.querySelectorAll('nav button'),function(x){x.classList.toggle('on',x===b)});
+  ['sched','resp','reqs','emps','sett'].forEach(function(t){$('tab-'+t).classList.toggle('hide',t!==b.dataset.tab)});
+}});
+
+/* ---------- schedule ---------- */
+function renderSched(){
+  var det0=$('det');if(det0.parentNode!==sideBox)sideBox.insertBefore(det0,sideBox.firstChild);
+  var pr=$('prevRow');pr.innerHTML='';
+  if(D.prev&&D.prev.tail){var t=D.prev.tail,keys=Object.keys(t).sort();
+    if(keys.some(function(k){return t[k].length})){
+      pr.innerHTML='<div class="prevrow"><b>סוף התקופה הקודמת:</b>'+keys.map(function(k){return '<span>'+HEB[Scheduler.dow(k)]+' '+fmt(k)+': '+(t[k].length?t[k].map(function(n){var c=color(n);return '<span class="pc" style="background:'+c+';color:'+textOn(c)+'">'+esc(n)+'</span>'}).join(' '):'-')+'</span>'}).join('')+'</div>';
+    }}
+  var g=$('grid');g.innerHTML='';
+  HEB.forEach(function(h){var e=document.createElement('div');e.className='dh';e.textContent=h;g.appendChild(e)});
+  var ds=days();if(!ds.length)return;
+  for(var i=0;i<Scheduler.dow(ds[0]);i++){var e=document.createElement('div');e.className='cell empty';g.appendChild(e)}
+  var emps=activeEmps();
+  ds.forEach(function(d,di){
+    var n=Scheduler.slotsFor(d,hol()),wk=Scheduler.isWeekend(d,hol());
+    var cell=document.createElement('div');cell.className='cell'+(wk?' wk':'')+(selDay===d?' sel':'')+(Scheduler.dow(d)===0?' sun':'')+(d===D.settings.today?' today':'')+(n===1?' one':'');cell.dataset.d=d;
+    var canCnt=0,wantCnt=0;emps.forEach(function(e){var v=val(e.name,d);if(v==='W'){wantCnt++;canCnt++}else if(v==='C')canCnt++});
+    var top=document.createElement('div');top.className='top';
+    top.innerHTML='<span class="date"><span class="dn">'+HEB[Scheduler.dow(d)]+' </span>'+fmt(d)+'</span>'+(hol().indexOf(d)>=0?'<span class="tag">חג</span>':'')+'';
+    top.onclick=function(){selDay=d;renderSched()};
+    cell.appendChild(top);
+    var av=document.createElement('div');av.className='av';av.textContent=canCnt+' זמינים'+(wantCnt?', '+wantCnt+' רוצים':'');cell.appendChild(av);
+    for(var k=0;k<n;k++)cell.appendChild(slotSelect(d,k,di,ds));
+    g.appendChild(cell);
+  });
+  renderSide();
+  placeDet();
+  var p=D.published;$('pubBtn').textContent=p?'ביטול פרסום':'פרסום לעובדים';
+  if(D._markInit!==D.view.periodId){$('markSwap').checked=!!p;D._markInit=D.view.periodId}
+  $('schedInfo').textContent=(D.scheduleUpdated?'נשמר לאחרונה: '+D.scheduleUpdated+'. ':'')+(p?'הסידור מפורסם לעובדים.':'הסידור עדיין לא פורסם לעובדים.');
+}
+/* בטלפון: פרטי היום נפתחים מתחת ליום שנבחר */
+var sideBox=$('det').parentNode;
+function isMobile(){return window.innerWidth<=760}
+function placeDet(){
+  var det=$('det');if(!sideBox)sideBox=det.parentNode;
+  var cell=selDay&&$('grid').querySelector('.cell[data-d="'+selDay+'"]');
+  if(isMobile()&&cell){cell.parentNode.insertBefore(det,cell.nextSibling);det.classList.add('inline')}
+  else if(det.parentNode!==sideBox){sideBox.insertBefore(det,sideBox.firstChild);det.classList.remove('inline')}
+  else det.classList.remove('inline');
+  if(isMobile()&&!selDay)det.classList.add('hide');else det.classList.remove('hide');
+}
+window.addEventListener('resize',function(){if(D)placeDet()});
+function slotSelect(d,k,di,ds){
+  var s=document.createElement('select');s.className='slot';
+  var cur=(A[d]||[])[k]||'';
+  var groups={W:[],C:[],N:[],B:[],V:[]};
+  activeEmps().forEach(function(e){groups[val(e.name,d)].push(e.name)});
+  var o=document.createElement('option');o.value='';o.textContent='--';s.appendChild(o);
+  [['W','רוצה'],['C','יכול'],['N','לא הגיש'],['B','חוסם'],['V','חופשה / טרם התחיל']].forEach(function(gr){
+    if(!groups[gr[0]].length)return;
+    var og=document.createElement('optgroup');og.label=gr[1];
+    groups[gr[0]].sort(function(a,b){return a.localeCompare(b,'he')}).forEach(function(n){
+      var o=document.createElement('option');o.value=n;o.textContent=n+(gr[0]==='B'?' (חוסם)':gr[0]==='V'?' (חופשה)':'');og.appendChild(o)});
+    s.appendChild(og);
+  });
+  if(cur&&!s.querySelector('option[value="'+cur.replace(/"/g,'\\"')+'"]')){var x=document.createElement('option');x.value=cur;x.textContent=cur+' (לא פעיל)';s.appendChild(x)}
+  s.value=cur;
+  if(cur){s.style.background=color(cur);s.style.color=textOn(color(cur));
+    var v=val(cur,d);
+    var prev=di>0?A[ds[di-1]]||[]:((prevTail()||{})[Scheduler.addDays(ds[0],-1)]||[]),next=di<ds.length-1?A[ds[di+1]]||[]:[];
+    var other=(A[d]||[]).filter(function(x,i){return i!==k&&x===cur}).length;
+    var pair=(A[d]||[]).filter(function(x,i){return i!==k&&x})[0];
+    if(v==='B'||v==='V'||other){s.classList.add('bad');s.title=other?'משובץ פעמיים באותו יום':v==='V'?'בחופשה או לפני תאריך ההתחלה':'העובד/ת חסם/ה את היום'}
+    else if(pair&&empOf(cur)&&empOf(cur).isNew&&empOf(pair)&&empOf(pair).isNew){s.classList.add('soft');s.title='שני חדשים ביחד'}
+    else if(prev.indexOf(cur)>=0||next.indexOf(cur)>=0){s.classList.add('soft');s.title='יום אחרי יום'}
+  }else s.classList.add('none');
+  s.onchange=function(){
+    if(!A[d])A[d]=[];if(!O[d])O[d]=[];
+    var prev=A[d][k]||null,nv=s.value||null;
+    if($('markSwap').checked&&prev&&nv){var orig=O[d][k]||prev;O[d][k]=orig===nv?null:orig}
+    else O[d][k]=null;
+    A[d][k]=nv;orderDay(d);setDirty(true);renderSched()};
+  var o=(O[d]||[])[k];
+  if(o&&cur){var w=document.createElement('div');w.appendChild(s);var t=document.createElement('div');t.className='orig';t.textContent='(במקום '+o+')';w.appendChild(t);return w}
+  return s;
+}
+function renderSide(){
+  var ds=days(),emps=activeEmps(),an=Scheduler.analyze(ds,hol(),emps,avail(),A,VAC,prevTail());
+  // stats
+  var hasPrev=!!D.prev;
+  var h='<tr><th style="text-align:right">שם</th><th>סה"כ</th><th>סופ"ש</th>'+(hasPrev?'<th title="סופ&quot;שים בשתי התקופות הקודמות">סופ"ש 2 חודשים קודמים</th>':'')+'<th>רוצה</th><th title="כמה משמרות קיבל/ה בימים שסימן/ה יכול">יכול</th><th>רצופים</th><th>שב\' ריקים</th></tr>';
+  emps.forEach(function(e){
+    var s=an.stats[e.name];var mn=parseFloat(e.min),mx=parseFloat(e.max);
+    var tc=(!isNaN(mx)&&s.total>mx)||(!isNaN(mn)&&!e.start&&s.total<mn)?'bad-t':'';
+    var nores=!D.responses[e.name];
+    h+='<tr><td class="nm"><span class="dot" style="background:'+esc(e.color)+'"></span>'+esc(e.name)+(e.isNew?'<span class="newtag">חדש</span>':'')+(nores?' <span class="muted">(לא הגיש)</span>':'')+'</td><td class="'+tc+'" title="טווח: '+(e.min||'0')+'-'+(e.max||'')+'">'+s.total+'</td><td>'+s.weekend+'</td>'+(hasPrev?'<td class="muted">'+prevWk(e.name)+'</td>':'')+'<td title="קיבל/ה מתוך הימים שביקש/ה">'+(function(){var asked=ds.filter(function(d){return val(e.name,d)==='W'}).length;return asked?s.wants+'/'+asked:'-'})()+'</td><td>'+(s.canDays||0)+'</td><td class="'+(s.consecutive?'warn-t':'')+'">'+s.consecutive+'</td><td class="'+(s.emptyWeeks?'warn-t':'')+'">'+s.emptyWeeks+'</td></tr>';
+  });
+  $('stats').innerHTML=h;
+  var notes=emps.filter(function(e){return D.responses[e.name]&&D.responses[e.name].note});
+  $('notesCard').classList.toggle('hide',!notes.length);
+  $('notes').innerHTML=notes.map(function(e){return '<div class="rq"><div class="t"><span class="dot" style="background:'+esc(e.color)+'"></span><b>'+esc(e.name)+':</b> '+esc(D.responses[e.name].note)+'</div></div>'}).join('');
+  // warnings (+consecutive)
+  var w=an.warnings.slice();
+  Object.keys(an.stats).forEach(function(n){var st=an.stats[n];for(var j=1;j<st.dates.length;j++)if(st.dates[j]===st.dates[j-1]+1)w.push({type:'cons',date:ds[st.dates[j]],text:n+': יום אחרי יום ('+fmt(ds[st.dates[j-1]])+', '+fmt(ds[st.dates[j]])+')'})});
+  Object.keys(an.stats).forEach(function(n){if(an.stats[n].boundary)w.push({type:'cons',date:ds[0],text:n+': יום אחרי יום עם סוף התקופה הקודמת ('+fmt(Scheduler.addDays(ds[0],-1))+')'})});
+  var order={blocked:0,dup:0,max:1,newpair:2,empty:3,cons:4};w.sort(function(a,b){return order[a.type]-order[b.type]||String(a.date).localeCompare(String(b.date))});
+  $('wcount').textContent=w.length?'('+w.length+')':'';
+  $('warns').innerHTML=w.length?w.map(function(x){return '<li class="'+(x.type==='blocked'||x.type==='dup'||x.type==='max'?'b':'')+'" data-d="'+(x.date||'')+'">'+(x.date?fmt(x.date)+': ':'')+esc(x.text)+'</li>'}).join(''):'<li style="background:var(--want-bg)">אין התראות</li>';
+  [].forEach.call($('warns').querySelectorAll('li[data-d]'),function(li){if(li.dataset.d)li.onclick=function(){selDay=li.dataset.d;renderSched()}});
+  // day details
+  var det=$('det');
+  if(!selDay||ds.indexOf(selDay)<0){return}
+  var grp={W:[],C:[],B:[],N:[],V:[]};emps.forEach(function(e){grp[val(e.name,selDay)].push(e.name)});
+  var dh='<h3>יום '+HEB[Scheduler.dow(selDay)]+' '+fmt(selDay)+(hol().indexOf(selDay)>=0?' (חג)':'')+'</h3><div class="muted">לחיצה על שם משבצת אותו למשבצת הפנויה הראשונה. * = חדש</div>';
+  [['W','רוצים'],['C','יכולים'],['N','לא הגישו'],['B','חוסמים'],['V','בחופשה / טרם התחילו']].forEach(function(g){
+    if(!grp[g[0]].length)return;
+    dh+='<div class="g"><b>'+g[1]+':</b> '+grp[g[0]].map(function(n){var cnt=an.stats[n]?an.stats[n].total:0;return '<span class="chip '+g[0]+'" data-n="'+esc(n)+'">'+esc(n)+(empOf(n)&&empOf(n).isNew?' *':'')+' ('+cnt+')</span>'}).join('')+'</div>';
+  });
+  det.innerHTML=dh;
+  [].forEach.call(det.querySelectorAll('.chip:not(.B):not(.V)'),function(c){c.onclick=function(){
+    var n=c.dataset.n,sl=Scheduler.slotsFor(selDay,hol());if(!A[selDay])A[selDay]=[];
+    if(A[selDay].indexOf(n)>=0){toast(n+' כבר משובץ/ת ביום הזה');return}
+    for(var k=0;k<sl;k++)if(!A[selDay][k]){A[selDay][k]=n;setDirty(true);renderSched();return}
+    toast('אין משבצת פנויה ביום הזה',true);
+  }});
+}
+function auto(fromScratch){
+  var ds=days(),fixed={};
+  ds.forEach(function(d){var n=Scheduler.slotsFor(d,hol());fixed[d]=fromScratch?[]:(A[d]||[]).slice(0,n);if(fromScratch)O[d]=[]});
+  var emps=activeEmps().map(function(e){return{name:e.name,min:e.min,max:e.max,isNew:e.isNew,start:e.start}});
+  var newNames=activeEmps().filter(function(e){return e.isNew}).map(function(e){return e.name});
+  var missing=activeEmps().filter(function(e){return !D.responses[e.name]}).length;
+  if(!$('inclMissing').checked&&missing===activeEmps().length){toast('אף עובד לא הגיש אילוצים עדיין',true);return}
+  toast('מחשב שיבוץ...');
+  setTimeout(function(){
+    var r=Scheduler.solve({days:ds,holidays:hol(),employees:emps,avail:avail(),fixed:fixed,includeMissing:$('inclMissing').checked,iterations:30,vacations:VAC,newNames:newNames,prevWeekend:D.prev?D.prev.weekend:null,prevTail:prevTail()});
+    A=r.assignment;ds.forEach(orderDay);setDirty(true);renderSched();
+    ds.forEach(function(d){if(!O[d])O[d]=[];for(var k=0;k<2;k++)if(O[d][k]&&A[d][k]!==fixed[d][k])O[d][k]=null});
+    var empty=0;ds.forEach(function(d){for(var k=0;k<Scheduler.slotsFor(d,hol());k++)if(!A[d][k])empty++});
+    toast(empty?'השיבוץ הושלם, נשארו '+empty+' משבצות ריקות (אין מי שזמין)':'השיבוץ הושלם. לחיצה נוספת תיתן גרסה אחרת.');
+  },30);
+}
+$('autoFill').onclick=function(){auto(false)};
+$('autoAll').onclick=function(){if(confirm('למחוק את כל השיבוצים ולשבץ מחדש?'))auto(true)};
+$('clearAll').onclick=function(){if(!confirm('לנקות את כל הסידור?'))return;days().forEach(function(d){A[d]=[];O[d]=[]});setDirty(true);renderSched()};
+function prevTail(){return D.prev?D.prev.tail:null}
+function prevWk(n){return D.prev&&D.prev.weekend[n]||0}
+/* ותיק בשורה הראשונה, חדש בשנייה. רק לפני פרסום. */
+function orderDay(d){
+  if(D.published)return; // אחרי פרסום לא משנים סדר
+  var a=A[d]||[],o=O[d]||[];if(a.length<2||!a[0]||!a[1])return;
+  var e0=empOf(a[0]),e1=empOf(a[1]);
+  if(e0&&e0.isNew&&!(e1&&e1.isNew)){A[d]=[a[1],a[0]];O[d]=[o[1]||null,o[0]||null]}
+}
+function saveSched(pub,force){
+  var clean={},co={};days().forEach(function(d){var n=Scheduler.slotsFor(d,hol());clean[d]=(A[d]||[]).slice(0,n).map(function(x){return x||null});co[d]=(O[d]||[]).slice(0,n).map(function(x,k){return x&&clean[d][k]?x:null})});
+  return run('adminSaveSchedule',PW,D.view.periodId,clean,co,pub,D.scheduleUpdated||'',!!force).then(function(r){D.published=pub;D.scheduleUpdated=r.updated;setDirty(false);renderSched();return r})
+    .catch(function(e){
+      if(String(e.message).indexOf('CONFLICT')>=0){
+        if(confirm('עובדים ביצעו החלפה מאז שפתחת את הדף.\n"אישור" = לטעון את הסידור העדכני (שינויים שלא נשמרו יימחקו).\n"ביטול" = לדרוס עם הגרסה שלך.'))
+          return run('adminLoad',PW,D.view.periodId).then(function(d){boot(d);throw new Error('הסידור רוענן לגרסה העדכנית. בצעי את השינויים שוב ושמרי.')});
+        return saveSched(pub,true);
+      }
+      throw e;
+    });
+}
+$('saveSched').onclick=function(){saveSched(D.published).then(function(){toast('הסידור נשמר')}).catch(fail)};
+$('pubBtn').onclick=function(){var p=!D.published;saveSched(p).then(function(){$('markSwap').checked=p;toast(p?'הסידור פורסם. העובדים רואים אותו בקישור שלהם.':'הפרסום בוטל')}).catch(fail)};
+$('exportBtn').onclick=function(){
+  var go=function(){toast('מייצא...');return run('adminExport',PW,D.view.periodId).then(function(r){toast('נוצרו לשוניות: '+r.sheets.join(', '))})};
+  (dirty?saveSched(D.published).then(go):go()).catch(fail);
+};
+window.addEventListener('beforeunload',function(e){if(dirty||Object.keys(respDirty).length){e.preventDefault();e.returnValue=''}});
+
+/* ---------- versions ---------- */
+$('verBtn').onclick=function(){
+  $('verList').innerHTML='<div class="muted">טוען...</div>';$('verModal').classList.remove('hide');
+  run('adminListVersions',PW,D.view.periodId).then(function(list){
+    $('verList').innerHTML=list.length?list.map(function(v,i){
+      var n=0;Object.keys(v.a).forEach(function(d){(v.a[d]||[]).forEach(function(x){if(x)n++})});
+      return '<div class="rq"><div class="t"><b>'+esc(v.time)+'</b><br><span class="muted">'+esc(v.reason)+' | '+n+' משמרות משובצות</span></div><button class="btn2" data-ver="'+i+'">שחזור</button></div>'}).join(''):'<div class="muted">עדיין אין גרסאות שמורות לתקופה הזו.</div>';
+    [].forEach.call($('verList').querySelectorAll('[data-ver]'),function(b){b.onclick=function(){
+      var v=list[+b.dataset.ver];
+      if(!confirm('לטעון את הגרסה מ-'+v.time+'? הסידור שעל המסך יוחלף בה (עדיין לא נשמר).'))return;
+      days().forEach(function(d){A[d]=(v.a[d]||[]).slice();O[d]=(v.o[d]||[]).slice()});
+      setDirty(true);renderSched();$('verModal').classList.add('hide');toast('הגרסה נטענה. בדקי ולחצי "שמירה" כדי לקבע אותה.');
+    }});
+  }).catch(fail);
+};
+$('verClose').onclick=function(){$('verModal').classList.add('hide')};
+$('verModal').onclick=function(e){if(e.target===$('verModal'))$('verModal').classList.add('hide')};
+
+/* ---------- responses matrix ---------- */
+function renderResp(){
+  var ds=days(),emps=activeEmps(),mx=parseInt(D.settings.maxBlocks,10);
+  var sub=emps.filter(function(e){return D.responses[e.name]}).length;
+  $('respSum').textContent=sub+' מתוך '+emps.length+' הגישו';
+  var cur=D.view.current;
+  var h='<thead><tr><th class="nm">שם</th><th>חסימות</th><th>עודכן</th><th>הערה</th>'+(cur?'<th title="פתיחת הגשה לעובד ספציפי גם אחרי הסגירה">הגשה פתוחה לו עד</th>':'');
+  ds.forEach(function(d){h+='<th class="'+(Scheduler.isWeekend(d,hol())?'wkh':'')+'">'+LET[Scheduler.dow(d)]+'<br>'+fmt(d)+'</th>'});
+  h+='</tr></thead><tbody>';
+  emps.forEach(function(e){
+    var r=D.responses[e.name];var b=r?Object.keys(r.values).filter(function(k){return ds.indexOf(k)>=0&&r.values[k]==='B'}).length:0;
+    var lim=e.maxBlocks!==''&&e.maxBlocks!=null?parseInt(e.maxBlocks,10):mx;
+    h+='<tr><td class="nm"><span class="dot" style="background:'+esc(e.color)+'"></span>'+esc(e.name)+(respDirty[e.name]?' <span class="dirty">*</span>':'')+'</td><td class="'+(b>lim?'bad-t':'')+'" title="מותר: '+lim+'">'+(r?b+'/'+lim:'-')+'</td><td class="muted" style="white-space:nowrap">'+(r?esc(r.updated):'לא הגיש')+'</td><td title="'+esc(r&&r.note||'')+'" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;font-size:12px">'+esc(r&&r.note||'')+'</td>'+(cur?'<td><input type="date" class="ext" data-n="'+esc(e.name)+'" value="'+esc(e.ext||'')+'" style="padding:2px 4px;font-size:12px'+(e.ext&&e.ext>=D.settings.today?';border-color:#2e8b57;background:#dff3e7':'')+'"></td>':'');
+    ds.forEach(function(d){var v=val(e.name,d);h+='<td class="v '+v+'" data-n="'+esc(e.name)+'" data-d="'+d+'">'+(v==='W'?'ר':v==='B'?'ח':v==='V'?'חופ':v==='N'?'':'·')+'</td>'});
+    h+='</tr>';
+  });
+  h+='<tr><td class="nm"><b>זמינים</b></td><td></td><td></td><td></td>'+(cur?'<td></td>':'');
+  ds.forEach(function(d){var c=0,need=Scheduler.slotsFor(d,hol());emps.forEach(function(e){var v=val(e.name,d);if(v==='W'||v==='C')c++});h+='<td class="'+(c<=need+1?'bad-t':'')+'">'+c+'</td>'});
+  h+='</tr></tbody>';
+  $('mx').innerHTML=h;
+  [].forEach.call($('mx').querySelectorAll('input.ext'),function(inp){inp.onchange=function(){
+    run('adminSetExtension',PW,inp.dataset.n,inp.value).then(function(list){D.employees=list;empDraft=null;renderEmps();renderResp();
+      toast(inp.value?'ההגשה פתוחה ל'+inp.dataset.n+' עד '+fmt(inp.value):'ההארכה בוטלה')}).catch(fail)}});
+  [].forEach.call($('mx').querySelectorAll('td.v'),function(td){td.onclick=function(){
+    var n=td.dataset.n,d=td.dataset.d;
+    if(td.classList.contains('V')){toast('חופשה מאושרת או לפני תאריך ההתחלה');return}
+    if(!D.responses[n]){D.responses[n]={values:{},updated:'נערך ידנית',blocks:0};days().forEach(function(x){D.responses[n].values[x]='C'})}
+    var cur=D.responses[n].values[d]||'C';D.responses[n].values[d]=cur==='C'?'W':cur==='W'?'B':'C';
+    respDirty[n]=1;$('saveResp').disabled=false;renderResp();renderSched();
+  }});
+}
+$('saveResp').onclick=function(){
+  var names=Object.keys(respDirty);if(!names.length)return;$('saveResp').disabled=true;
+  var p=Promise.resolve();
+  names.forEach(function(n){p=p.then(function(){return run('adminSaveResponse',PW,D.view.periodId,n,D.responses[n].values).then(function(r){D.responses=r;delete respDirty[n]})})});
+  p.then(function(){toast('האילוצים נשמרו');renderResp();renderSched()}).catch(function(e){fail(e);$('saveResp').disabled=false});
+};
+
+/* ---------- requests ---------- */
+var STL={pending:'ממתין',approved:'אושר',declined:'נדחה',rejected:'לא אושר',failed:'לא בוצע',cancelled:'בוטל'};
+function dnm(iso){return 'יום '+HEB[Scheduler.dow(iso)]+' '+fmt(iso)}
+function vrange(q){return fmt(q.details.start)+(q.details.end!==q.details.start?' עד '+fmt(q.details.end):'')}
+function renderReqs(){
+  var R=(D.requests||[]).slice().reverse();
+  var vp=R.filter(function(q){return q.type==='vacation'&&q.status==='pending'});
+  var sp=R.filter(function(q){return (q.type==='swap'||q.type==='give')&&q.status==='pending'});
+  var tx=function(q,pend){if(q.type==='give')return '<b>'+esc(q.from)+'</b> '+(pend?'מוסר/ת':'מסר/ה')+' '+dnm(q.details.give)+' '+(q.to==='*'?'לכל מי שפנוי':'ל<b>'+esc(q.to)+'</b>')+' (בלי להחזיר)';
+    return '<b>'+esc(q.from)+'</b> '+(pend?'מוסר/ת':'מסר/ה')+' '+dnm(q.details.give)+' ל<b>'+esc(q.to)+'</b> ו'+(pend?'לוקח/ת':'לקח/ה')+' '+dnm(q.details.take)};
+  $('reqBadge').textContent=vp.length+sp.length;$('reqBadge').classList.toggle('hide',!(vp.length+sp.length));
+  $('swapPending').innerHTML=sp.length?sp.map(function(q){return '<div class="rq"><div class="t">'+tx(q,true)+(q.note?' <span class="muted">"'+esc(q.note)+'"</span>':'')+'<br><span class="muted">נשלח '+esc(q.created)+', '+(q.to==='*'?'ממתין שמישהו ייקח':'ממתין לאישור של '+esc(q.to))+'</span></div>'+(q.to==='*'?'':'<button class="btn" data-sa="'+q.id+'">אישור</button>')+'<button class="danger" data-sr="'+q.id+'">דחייה</button></div>'}).join(''):'<div class="muted">אין החלפות ממתינות.</div>';
+  $('vacPending').innerHTML=vp.length?vp.map(function(q){
+    var conflict=Scheduler.listDays(q.details.start,q.details.end).filter(function(d){return (A[d]||[]).indexOf(q.from)>=0});
+    return '<div class="rq"><div class="t"><b>'+esc(q.from)+'</b>: '+vrange(q)+(q.note?' <span class="muted">"'+esc(q.note)+'"</span>':'')+'<br><span class="muted">נשלח '+esc(q.created)+'</span>'+(conflict.length?'<br><span class="bad-t">משובץ/ת בסידור ב: '+conflict.map(fmt).join(', ')+'</span>':'')+'</div><button class="btn" data-va="'+q.id+'">אישור</button><button class="danger" data-vr="'+q.id+'">דחייה</button></div>'}).join(''):'<div class="muted">אין בקשות ממתינות.</div>';
+  var va=R.filter(function(q){return q.type==='vacation'&&q.status!=='pending'&&q.status!=='cancelled'}).slice(0,40);
+  $('vacApproved').innerHTML=va.length?va.map(function(q){return '<div class="rq"><div class="t"><b>'+esc(q.from)+'</b>: '+vrange(q)+(q.note?' <span class="muted">"'+esc(q.note)+'"</span>':'')+'</div><span class="st '+q.status+'">'+STL[q.status]+'</span>'+(q.status==='approved'?'<button class="btn3" data-vx="'+q.id+'">ביטול אישור</button>':'')+'</div>'}).join(''):'<div class="muted">אין.</div>';
+  var sw=R.filter(function(q){return q.type==='swap'||q.type==='give'}).slice(0,60);
+  $('swapLog').innerHTML=sw.length?sw.map(function(q){return '<div class="rq"><div class="t">'+tx(q,false)+'<br><span class="muted">'+esc(q.created)+(q.resolved?' | טופל '+esc(q.resolved):'')+'</span></div><span class="st '+q.status+'">'+STL[q.status]+'</span></div>'}).join(''):'<div class="muted">עוד לא היו החלפות.</div>';
+  var act=function(sel,fn){[].forEach.call(document.querySelectorAll(sel),function(b){b.onclick=function(){b.disabled=true;fn(b).then(function(list){D.requests=list;buildVac();renderReqs();renderSched();renderResp()}).catch(fail)}})};
+  act('[data-va]',function(b){return run('adminResolveVacation',PW,b.dataset.va,true)});
+  act('[data-vr]',function(b){return run('adminResolveVacation',PW,b.dataset.vr,false)});
+  act('[data-vx]',function(b){return run('adminSetRequestStatus',PW,b.dataset.vx,'cancelled')});
+  [].forEach.call(document.querySelectorAll('[data-sa],[data-sr]'),function(b){b.onclick=function(){
+    var ok=!!b.dataset.sa,id=b.dataset.sa||b.dataset.sr;
+    if(ok&&dirty&&!confirm('יש לך שינויים בסידור שלא נשמרו. אישור ההחלפה יטען מחדש את הסידור והשינויים יימחקו. להמשיך?'))return;
+    if(ok&&!confirm('לאשר את ההחלפה? הסידור יתעדכן מיד.'))return;
+    b.disabled=true;
+    run('adminResolveSwap',PW,id,ok).then(function(){return run('adminLoad',PW,D.view.periodId)}).then(function(d){boot(d);toast(ok?'ההחלפה בוצעה והסידור עודכן':'הבקשה נדחתה')}).catch(function(e){fail(e);run('adminLoad',PW,D.view.periodId).then(boot)});
+  }});
+}
+
+/* ---------- employees ---------- */
+function renderEmps(){
+  if(!empDraft)empDraft=D.employees.map(function(e){return Object.assign({origName:e.name},e)});
+  var h='<tr><th>צבע</th><th style="text-align:right">שם</th><th style="text-align:right">מייל</th><th>פעיל</th><th>ותק</th><th>מינ\' משמרות</th><th>מקס\' משמרות</th><th>מקס\' חסימות</th><th>מתחיל מתאריך</th><th>סיסמה</th><th></th></tr>';
+  empDraft.forEach(function(e,i){
+    h+='<tr><td><input type="color" data-i="'+i+'" data-f="color" value="'+esc(e.color||'#cccccc')+'"></td><td><input type="text" data-i="'+i+'" data-f="name" value="'+esc(e.name)+'"></td><td><input type="email" dir="ltr" data-i="'+i+'" data-f="email" value="'+esc(e.email)+'"></td><td><input type="checkbox" data-i="'+i+'" data-f="active"'+(e.active?' checked':'')+'></td><td><select data-i="'+i+'" data-f="isNew"><option value="">ותיק</option><option value="1"'+(e.isNew?' selected':'')+'>חדש</option></select></td><td><input type="number" min="0" data-i="'+i+'" data-f="min" value="'+esc(e.min)+'"></td><td><input type="number" min="0" data-i="'+i+'" data-f="max" value="'+esc(e.max)+'"></td><td><input type="number" min="0" placeholder="'+esc(D.settings.maxBlocks)+'" data-i="'+i+'" data-f="maxBlocks" value="'+esc(e.maxBlocks)+'"></td><td><input type="date" data-i="'+i+'" data-f="start" value="'+esc(e.start)+'"></td><td style="white-space:nowrap">'+(e.hasPw?'<span class="muted">מוגדרת</span> <button class="btn3" data-rpw="'+esc(e.origName||e.name)+'" style="padding:4px 8px;font-size:12px">איפוס</button>':'<span class="muted">עוד לא</span>')+'</td><td><button class="danger" data-del="'+i+'">מחיקה</button></td></tr>';
+  });
+  $('et').innerHTML=h;
+  [].forEach.call($('et').querySelectorAll('input,select'),function(inp){inp.oninput=inp.onchange=function(){var e=empDraft[+inp.dataset.i];e[inp.dataset.f]=inp.type==='checkbox'?inp.checked:inp.dataset.f==='isNew'?!!inp.value:inp.value}});
+  [].forEach.call($('et').querySelectorAll('[data-rpw]'),function(b){b.onclick=function(){if(!confirm('לאפס את הסיסמה של '+b.dataset.rpw+'? בכניסה הבאה הוא/היא יקבל/תקבל קוד למייל ויגדיר/תגדיר סיסמה חדשה.'))return;
+    run('adminResetPassword',PW,b.dataset.rpw).then(function(list){D.employees=list;empDraft=null;renderEmps();toast('הסיסמה אופסה')}).catch(fail)}});
+  [].forEach.call($('et').querySelectorAll('[data-del]'),function(b){b.onclick=function(){var e=empDraft[+b.dataset.del];if(confirm('למחוק את '+(e.name||'השורה')+'? עדיף לסמן "לא פעיל" אם הוא/היא עוד יחזרו.')){empDraft.splice(+b.dataset.del,1);renderEmps()}}});
+}
+$('addEmp').onclick=function(){var pal=['#F4A340','#7FA7A8','#9DC3E6','#BF9000','#D9D2E9','#3D85C6','#A64D79','#F9CB9C','#E06666','#674EA7','#6AA84F','#FFD966'];empDraft.push({name:'',email:'',active:true,min:'3',max:'6',color:pal[empDraft.length%pal.length],isNew:true,maxBlocks:'',start:''});renderEmps()};
+$('saveEmps').onclick=function(){run('adminSaveEmployees',PW,empDraft).then(function(list){D.employees=list;empDraft=null;renderEmps();renderSched();renderResp();renderReqs();toast('רשימת העובדים נשמרה')}).catch(fail)};
+
+/* ---------- settings ---------- */
+function renderSett(){
+  var s=D.settings;$('sTitle').value=s.title||'';$('sStart').value=s.start;$('sEnd').value=s.end;$('sMax').value=s.maxBlocks;$('sShown').value=s.shownBlocks||8;$('sOpen').checked=!!s.open;$('sMail').checked=s.emailNotify!==false;$('sRemind').checked=s.reminders!==false;$('sAdminMail').value=s.adminEmail||'';$('sDeadline').value=s.deadline||'';
+  $('hS').value=s.shiftStart||'';$('hE').value=s.shiftEnd||'';$('wS').value=s.wkStart||'';$('wE').value=s.wkEnd||'';
+  $('perTable').innerHTML='<tr><th style="text-align:right">תקופה</th><th>מצב</th><th></th></tr>'+(D.periods||[]).map(function(p){
+    return '<tr><td class="nm">'+fmt(p.start)+' עד '+fmt(p.end)+'</td><td>'+(p.current?'<b>נוכחית</b>':'')+(p.published?' פורסם':p.hasSchedule?' סידור לא מפורסם':' בלי סידור')+'</td><td style="text-align:left">'+
+      (p.current?'':'<button class="btn2" data-cur="'+esc(p.periodId)+'">הפיכה לנוכחית</button> ')+'<button class="btn3" data-view="'+esc(p.periodId)+'">צפייה</button>'+(p.current?'':' <button class="danger" data-delp="'+esc(p.periodId)+'">מחיקה</button>')+'</td></tr>'}).join('');
+  [].forEach.call(document.querySelectorAll('[data-cur]'),function(b){b.onclick=function(){if(!confirm('להפוך את התקופה הזו לנוכחית? העובדים יגישו אליה אילוצים, וההגדרות יחולו עליה.'))return;run('adminSetCurrentPeriod',PW,b.dataset.cur).then(function(d){boot(d);toast('התקופה הנוכחית עודכנה')}).catch(fail)}});
+  [].forEach.call(document.querySelectorAll('[data-view]'),function(b){b.onclick=function(){run('adminLoad',PW,b.dataset.view).then(function(d){boot(d);document.querySelector('nav button[data-tab=sched]').click()}).catch(fail)}});
+  [].forEach.call(document.querySelectorAll('[data-delp]'),function(b){b.onclick=function(){if(!confirm('למחוק את התקופה הזו? האילוצים והסידור שלה יימחקו לצמיתות.'))return;run('adminDeletePeriod',PW,b.dataset.delp).then(function(d){boot(d);toast('התקופה נמחקה')}).catch(fail)}});
+  holDraft=(s.holidays||[]).slice();renderHcal();
+  var base=D.url||'';$('lnkEmp').value=base||'(יופיע אחרי פריסה כאפליקציית אינטרנט)';$('lnkAdm').value=D.adminUrl||(base?base+'?page=admin':'');$('sSite').value=s.siteUrl||'';$('lnkSheet').value=D.sheetUrl||'';
+}
+function renderHcal(){
+  var st=$('sStart').value,en=$('sEnd').value,c=$('hcal');c.innerHTML='';
+  HEB.forEach(function(h){var e=document.createElement('div');e.className='hd';e.textContent=h;c.appendChild(e)});
+  var ds=Scheduler.listDays(st,en);
+  var hint='';
+  if(ds.length){
+    if(Scheduler.dow(st)!==0)hint+='תאריך ההתחלה הוא יום '+HEB[Scheduler.dow(st)]+', לא ראשון. ';
+    if(Scheduler.dow(en)!==6)hint+='תאריך הסיום הוא יום '+HEB[Scheduler.dow(en)]+', לא שבת. ';
+    hint+=ds.length+' ימים, '+Math.ceil(ds.length/7)+' שבועות.';
+    for(var i=0;i<Scheduler.dow(ds[0]);i++){var x=document.createElement('div');x.className='x';c.appendChild(x)}
+  }
+  $('weekHint').textContent=hint;
+  ds.forEach(function(d){var e=document.createElement('div');var w=Scheduler.dow(d);
+    e.className=(holDraft.indexOf(d)>=0?'h':(w===5||w===6?'w':''));e.textContent=fmt(d);
+    e.onclick=function(){var i=holDraft.indexOf(d);if(i>=0)holDraft.splice(i,1);else holDraft.push(d);renderHcal()};c.appendChild(e)});
+}
+$('sStart').onchange=$('sEnd').onchange=renderHcal;
+$('alignWeeks').onclick=function(){var st=$('sStart').value,en=$('sEnd').value;if(!st||!en)return;
+  $('sStart').value=Scheduler.addDays(st,-Scheduler.dow(st));$('sEnd').value=Scheduler.addDays(en,6-Scheduler.dow(en));renderHcal()};
+function settObj(){return{title:$('sTitle').value,start:$('sStart').value,end:$('sEnd').value,maxBlocks:$('sMax').value,shownBlocks:$('sShown').value,siteUrl:$('sSite').value,open:$('sOpen').checked,emailNotify:$('sMail').checked,reminders:$('sRemind').checked,adminEmail:$('sAdminMail').value,deadline:$('sDeadline').value,holidays:holDraft,shiftStart:$('hS').value,shiftEnd:$('hE').value,wkStart:$('wS').value,wkEnd:$('wE').value}}
+$('saveSite').onclick=function(){run('adminSaveSettings',PW,settObj(),false).then(function(d){boot(d);toast('הכתובת נשמרה')}).catch(fail)};
+$('saveHours').onclick=function(){run('adminSaveSettings',PW,settObj(),false).then(function(d){boot(d);toast('השעות נשמרו')}).catch(fail)};
+$('saveSett').onclick=function(){run('adminSaveSettings',PW,settObj(),false).then(function(d){boot(d);toast('ההגדרות נשמרו')}).catch(fail)};
+$('newPeriod').onclick=function(){
+  if(!confirm('לפתוח תקופה חדשה עם התאריכים שבטופס? העובדים יתחילו טופס ריק. הנתונים של התקופה הקודמת נשמרים בגיליון.'))return;
+  run('adminSaveSettings',PW,settObj(),true).then(function(d){boot(d);toast('נפתחה תקופה חדשה')}).catch(fail)};
+[].forEach.call(document.querySelectorAll('[data-copy]'),function(b){b.onclick=function(){var i=$(b.dataset.copy);i.select();try{document.execCommand('copy');toast('הועתק')}catch(e){}}});
+$('chPw').onclick=function(){var n=$('newPw').value;run('adminChangePassword',PW,n).then(function(){PW=n;sset('adm_pw',n);$('newPw').value='';toast('הסיסמה עודכנה')}).catch(fail)};
+</script>
+</body>
+</html>
