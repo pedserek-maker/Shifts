@@ -94,6 +94,9 @@
   .mode button{border:2px solid var(--line);background:#fff;color:var(--ink);padding:10px 4px}
   .mode button.on{border-color:var(--pri);background:var(--pri2);color:var(--pri)}
   .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  #topAlert{position:fixed;top:10px;left:50%;transform:translateX(-50%);width:calc(100% - 24px);max-width:520px;background:var(--block);color:#fff;font-weight:700;padding:12px 14px;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:30;display:none;line-height:1.5}
+  #topAlert.on{display:block}
+  .ver{text-align:center;color:#b0b8b6;font-size:11px;margin:18px 0 0}
   .empty-note{color:var(--muted);font-size:14px;padding:8px 0}
   .persel{margin-bottom:12px}
   .dl{display:inline-block;margin-top:8px;background:rgba(255,255,255,.18);padding:3px 10px;border-radius:99px;font-size:14px;font-weight:700}
@@ -225,7 +228,9 @@
       <div id="vList"></div>
     </div>
   </div>
+<div class="ver">גרסה 8.3 (17/11)</div>
 </main>
+<div id="topAlert" role="alert"></div>
 <div class="bar" id="bar"><div class="in"><button class="btn" id="save">שליחת אילוצים</button></div></div>
 
 <script>
@@ -446,10 +451,12 @@ function renderCal(){
   });
   var b=blocks();$('cnt').textContent=b+'/'+shownMax+' חסימות';$('cnt').classList.toggle('full',b>=shownMax);
 }
+/* הודעה שקופצת בראש המסך ונעלמת לבד */
+function topAlert(t){var a=$('topAlert');a.textContent=t;a.classList.add('on');clearTimeout(a._t);a._t=setTimeout(function(){a.classList.remove('on')},5000);a.onclick=function(){a.classList.remove('on')}}
 function tap(d){
   var cur=values[d]||'C',nv=(cur===brush)?'C':brush;
-  if(nv==='B'&&cur!=='B'&&blocks()>=myMax){msg($('formMsg'),'err','הגעת למקסימום החסימות. צריך עוד? פנו לאחראית. בהיעדרות ממושכת יש לעדכן את האחראית מוקדם ככל האפשר.');return}
-  if(nv==='B'&&cur!=='B'&&isWk(d)&&wkBlocks()>=wkMax()){msg($('formMsg'),'err','אי אפשר לחסום כל כך הרבה ימי סופ"ש.');return}
+  if(nv==='B'&&cur!=='B'&&blocks()>=myMax){topAlert('הגעת למקסימום החסימות. צריך עוד? פנו לאחראית. בהיעדרות ממושכת יש לעדכן את האחראית מוקדם ככל האפשר.');return}
+  if(nv==='B'&&cur!=='B'&&isWk(d)&&wkBlocks()>=wkMax()){topAlert('אי אפשר לחסום כל כך הרבה ימי סופ"ש.');return}
   values[d]=nv;dirty=true;msg($('formMsg'),'','');renderCal();
 }
 $('save').onclick=function(){

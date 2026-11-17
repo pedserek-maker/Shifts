@@ -274,6 +274,7 @@
       <div><label class="f">מתאריך</label><input id="sStart" type="date" style="width:100%"></div>
       <div><label class="f">עד תאריך</label><input id="sEnd" type="date" style="width:100%"></div>
       <div><label class="f">מקסימום חסימות בפועל (ברירת מחדל)</label><input id="sMax" type="number" min="0" style="width:100%"></div>
+      <div><label class="f">מקסימום חסימות בסופ"ש (שישי, שבת וחג)</label><input id="sWk" type="number" min="0" style="width:100%"></div>
       <div><label class="f">מספר החסימות שהעובדים רואים</label><input id="sShown" type="number" min="0" style="width:100%"><div class="muted" style="font-size:12px">העובדים רואים מונה מתוך המספר הזה, אבל המערכת מאפשרת עד המקסימום בפועל.</div></div>
       <div><label class="f">הגשת אילוצים</label><label><input type="checkbox" id="sOpen"> פתוחה לעובדים</label></div>
       <div><label class="f">נסגר להגשה אחרי (כולל היום הזה)</label><input id="sDeadline" type="date" style="width:100%"></div>
@@ -324,6 +325,7 @@
     <div class="row"><input id="newPw" type="password" placeholder="סיסמה חדשה"><button class="btn2" id="chPw">עדכון</button></div>
   </div>
 </section>
+<div style="text-align:center;color:#b0b8b6;font-size:11px;margin:18px 0 0">גרסה 8.3 (17/11)</div>
 </main>
 </div>
 
@@ -984,7 +986,7 @@ $('saveEmps').onclick=function(){run('adminSaveEmployees',PW,empDraft).then(func
 
 /* ---------- settings ---------- */
 function renderSett(){
-  var s=D.settings;$('sTitle').value=s.title||'';$('sStart').value=s.start;$('sEnd').value=s.end;$('sMax').value=s.maxBlocks;$('sShown').value=s.shownBlocks||8;$('sOpen').checked=!!s.open;$('sMail').checked=s.emailNotify!==false;$('sRemind').checked=s.reminders!==false;$('sAdminMail').value=s.adminEmail||'';$('sDeadline').value=s.deadline||'';
+  var s=D.settings;$('sTitle').value=s.title||'';$('sStart').value=s.start;$('sEnd').value=s.end;$('sMax').value=s.maxBlocks;$('sShown').value=s.shownBlocks||8;$('sWk').value=s.wkBlocks!=null?s.wkBlocks:5;$('sOpen').checked=!!s.open;$('sMail').checked=s.emailNotify!==false;$('sRemind').checked=s.reminders!==false;$('sAdminMail').value=s.adminEmail||'';$('sDeadline').value=s.deadline||'';
   $('hS').value=s.shiftStart||'';$('hE').value=s.shiftEnd||'';$('wS').value=s.wkStart||'';$('wE').value=s.wkEnd||'';
   $('perTable').innerHTML='<tr><th style="text-align:right">תקופה</th><th>מצב</th><th></th></tr>'+(D.periods||[]).map(function(p){
     return '<tr><td class="nm">'+fmt(p.start)+' עד '+fmt(p.end)+'</td><td>'+(p.current?'<b>נוכחית</b>':'')+(p.published?' פורסם':p.hasSchedule?' סידור לא מפורסם':' בלי סידור')+'</td><td style="text-align:left">'+
@@ -1014,7 +1016,7 @@ function renderHcal(){
 $('sStart').onchange=$('sEnd').onchange=renderHcal;
 $('alignWeeks').onclick=function(){var st=$('sStart').value,en=$('sEnd').value;if(!st||!en)return;
   $('sStart').value=Scheduler.addDays(st,-Scheduler.dow(st));$('sEnd').value=Scheduler.addDays(en,6-Scheduler.dow(en));renderHcal()};
-function settObj(){return{title:$('sTitle').value,start:$('sStart').value,end:$('sEnd').value,maxBlocks:$('sMax').value,shownBlocks:$('sShown').value,siteUrl:$('sSite').value,open:$('sOpen').checked,emailNotify:$('sMail').checked,reminders:$('sRemind').checked,adminEmail:$('sAdminMail').value,deadline:$('sDeadline').value,holidays:holDraft,shiftStart:$('hS').value,shiftEnd:$('hE').value,wkStart:$('wS').value,wkEnd:$('wE').value}}
+function settObj(){return{title:$('sTitle').value,start:$('sStart').value,end:$('sEnd').value,maxBlocks:$('sMax').value,shownBlocks:$('sShown').value,wkBlocks:$('sWk').value,siteUrl:$('sSite').value,open:$('sOpen').checked,emailNotify:$('sMail').checked,reminders:$('sRemind').checked,adminEmail:$('sAdminMail').value,deadline:$('sDeadline').value,holidays:holDraft,shiftStart:$('hS').value,shiftEnd:$('hE').value,wkStart:$('wS').value,wkEnd:$('wE').value}}
 $('saveSite').onclick=function(){run('adminSaveSettings',PW,settObj(),false).then(function(d){boot(d);toast('הכתובת נשמרה')}).catch(fail)};
 $('saveHours').onclick=function(){run('adminSaveSettings',PW,settObj(),false).then(function(d){boot(d);toast('השעות נשמרו')}).catch(fail)};
 $('saveSett').onclick=function(){run('adminSaveSettings',PW,settObj(),false).then(function(d){boot(d);toast('ההגדרות נשמרו')}).catch(fail)};
