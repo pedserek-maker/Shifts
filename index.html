@@ -212,6 +212,7 @@
     <!-- חופשה -->
     <div class="card hide" id="t-vac">
       <h2>בקשת חופשה</h2>
+      <div class="msg info" style="display:block;margin:0 0 6px">יש להגיש בקשת חופשה מוקדם ככל הניתן, ולפחות חודש לפני תחילת החופשה. כך נוכל לוודא שלא יוצאים כמה אנשים לחופשה באותו זמן.</div>
       <div class="two">
         <div><label>מתאריך</label><input type="date" id="vStart"></div>
         <div><label>עד תאריך</label><input type="date" id="vEnd"></div>
@@ -282,6 +283,8 @@ function setDeadline(open){
 }
 function msg(el,type,text){el.className='msg '+type;el.textContent=text;el.style.display=text?'block':'none'}
 function blocks(){var n=0;for(var k in values)if(values[k]==='B')n++;return n}
+function wkBlocks(){var n=0;for(var k in values)if(values[k]==='B'&&isWk(k))n++;return n}
+function wkMax(){return S&&S.wkBlocks!=null?S.wkBlocks:5}
 function store(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 function load(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function textOn(hex){var h=(hex||'#fff').replace('#','');if(h.length===3)h=h.split('').map(function(c){return c+c}).join('');var r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);return (r*299+g*587+b*114)/1000>150?'#1d2b2a':'#fff'}
@@ -296,26 +299,41 @@ function initPublic(d){
   if(d.submitOpen&&S.deadline){var p=S.deadline.split('-');
     $('loginDue').textContent='הגשת אילוצים לתקופה '+fmt(S.start)+' עד '+fmt(S.end)+' פתוחה עד יום '+FULL_DAYS[dow(S.deadline)]+' '+(+p[2])+'/'+(+p[1])+' (כולל)';
     $('loginDue').classList.remove('hide');}
-  var sel=$('name');
+  var sel=$('name');var keepSel=sel.value;
+  while(sel.options.length>1)sel.remove(1);
   allNames=d.employees.slice().sort(function(a,b){return a.localeCompare(b,'he')});
   d.employees.slice().sort(function(a,b){return a.localeCompare(b,'he')}).forEach(function(n){var o=document.createElement('option');o.value=n;o.textContent=n;sel.appendChild(o)});
-  var ln=load('shift_name');
+  var ln=keepSel||load('shift_name');
   if(ln&&d.employees.indexOf(ln)>=0)sel.value=ln;
 }
 /* טעינה: מי שכבר מחובר מקבל הכל בבקשה אחת, בלי לראות קודם את מסך הכניסה */
+/* מטמון: מציגים מיד את הנתונים מהכניסה הקודמת, ומעדכנים ברקע */
+function loadJSON(k){try{return JSON.parse(load(k)||'null')}catch(e){return null}}
+function saveJSON(k,v){try{store(k,JSON.stringify(v))}catch(e){}}
+function showPublic(d){initPublic(d);if(schedule){$('pubOnly').classList.remove('hide');renderGrid($('sched0'))}}
 (function(){
   var ln=load('shift_name'),lt=load('shift_token');
   if(ln&&lt){
-    $('loginCard').classList.add('hide');$('loadingCard').classList.remove('hide');
-    run('getMyData',ln,lt,true).then(function(r){initPublic(r.pub);enterWith(r,lt)})
-      .catch(function(){
-        store('shift_token','');$('loadingCard').classList.add('hide');$('loginCard').classList.remove('hide');
-        run('getPublicData').then(function(d){initPublic(d);if(schedule){$('pubOnly').classList.remove('hide');renderGrid($('sched0'))}nameChosen()})
-          .catch(function(e){$('period').textContent='שגיאה בטעינה: '+e.message});
-      });
+    var cached=loadJSON('shift_cache');
+    var fromCache=!!(cached&&cached.name===ln&&cached.pub);
+    if(fromCache){try{initPublic(cached.pub);enterWith(cached,lt)}catch(e){fromCache=false}}
+    if(!fromCache){$('loginCard').classList.add('hide');$('loadingCard').classList.remove('hide');}
+    run('getMyData',ln,lt,true).then(function(r){
+      saveJSON('shift_cache',r);initPublic(r.pub);
+      if(fromCache){if(!dirty)enterWith(r,lt,true)}else enterWith(r,lt);
+    }).catch(function(err){
+      if(fromCache&&String(err.message).indexOf('AUTH')<0)return; // אין רשת: נשארים עם מה שמוצג
+      store('shift_token','');store('shift_cache','');
+      if(fromCache){location.reload();return}
+      $('loadingCard').classList.add('hide');$('loginCard').classList.remove('hide');
+      run('getPublicData').then(function(d){showPublic(d);nameChosen()})
+        .catch(function(e){$('period').textContent='שגיאה בטעינה: '+e.message});
+    });
   }else{
-    run('getPublicData').then(function(d){initPublic(d);if(schedule){$('pubOnly').classList.remove('hide');renderGrid($('sched0'))}if($('name').value)nameChosen()})
-      .catch(function(e){$('period').textContent='שגיאה בטעינה: '+e.message});
+    var cp=loadJSON('shift_pub');
+    if(cp){try{showPublic(cp);if($('name').value)nameChosen()}catch(e){}}
+    run('getPublicData').then(function(d){saveJSON('shift_pub',d);showPublic(d);if(!cp&&$('name').value)nameChosen()})
+      .catch(function(e){if(!cp)$('period').textContent='שגיאה בטעינה: '+e.message});
   }
 })();
 
@@ -362,14 +380,14 @@ $('go').onclick=function(){
     .catch(function(e){msg($('loginMsg'),'err',e.message)}).then(function(){$('go').disabled=false});
 };
 $('pw').onkeydown=function(e){if(e.key==='Enter')$('go').click()};
-function logout(){store('shift_token','');location.reload()}
+function logout(){store('shift_token','');store('shift_cache','');location.reload()}
 function enter(name,token,silent){
-  run('getMyData',name,token).then(function(r){enterWith(r,token)}).catch(function(err){
+  run('getMyData',name,token,true).then(function(r){saveJSON('shift_cache',r);if(r.pub)initPublic(r.pub);enterWith(r,token)}).catch(function(err){
     if(String(err.message).indexOf('AUTH')>=0){store('shift_token','');nameChosen();if(!silent)msg($('loginMsg'),'err','נא להתחבר מחדש')}
     else msg($('loginMsg'),'err',err.message);
   });
 }
-function enterWith(r,token){
+function enterWith(r,token,isRefresh){
   {
     me={name:r.name,token:token};store('shift_name',r.name);store('shift_token',token);
     $('loadingCard').classList.add('hide');$('loginCard').classList.add('hide');$('pubOnly').classList.add('hide');$('appArea').classList.remove('hide');
@@ -384,12 +402,14 @@ function enterWith(r,token){
     if(canSubmit&&due){var p=due.split('-');$('dueBox').textContent='אפשר להגיש ולעדכן אילוצים עד יום '+FULL_DAYS[dow(due)]+' '+(+p[2])+'/'+(+p[1])+' (כולל)';$('dueBox').classList.remove('hide')}
     if(r.ext&&canSubmit)msg($('formMsg'),'info','האחראית פתחה לך הגשה עד '+fmt(r.ext)+'.');
     else if(r.updated)msg($('formMsg'),'info','הגשת כבר ב-'+r.updated+'. אפשר לעדכן ולשלוח שוב.');
+    $('closedMsg').style.display='none';$('editor').classList.remove('hide');
     if(!canSubmit){$('closedMsg').style.display='block';$('closedMsg').textContent='הגשת האילוצים לתקופה הזו סגורה. פספסת? פנה/י לאחראית שתפתח לך. אפשר לצפות בסידור, להחליף משמרות ולבקש חופשה.';$('editor').classList.add('hide')}
     var inc=incomingReqs();
     var go=inc.length?'swap':(!canSubmit&&cur?'sched':'cons');
     var pid=inc.length?inc[0].details.period:(cur&&cur.periodId);
+    if(isRefresh){go=tab;if(preSched&&pubs.some(function(p){return p.periodId===preSched.periodId}))pid=preSched.periodId}
     showTab(go);
-    if(pid&&preSched&&preSched.periodId===pid){schedule=preSched;fillPerSel();renderSched();renderSwap()}
+    if(pid&&preSched&&preSched.periodId===pid&&!isRefresh){schedule=preSched;fillPerSel();renderSched();renderSwap()}
     else if(pid)loadSchedule(pid);
   }
 }
@@ -428,7 +448,8 @@ function renderCal(){
 }
 function tap(d){
   var cur=values[d]||'C',nv=(cur===brush)?'C':brush;
-  if(nv==='B'&&cur!=='B'&&blocks()>=myMax){msg($('formMsg'),'err','הגעת למקסימום החסימות. צריך עוד? פנו לאחראית.');return}
+  if(nv==='B'&&cur!=='B'&&blocks()>=myMax){msg($('formMsg'),'err','הגעת למקסימום החסימות. צריך עוד? פנו לאחראית. בהיעדרות ממושכת יש לעדכן את האחראית מוקדם ככל האפשר.');return}
+  if(nv==='B'&&cur!=='B'&&isWk(d)&&wkBlocks()>=wkMax()){msg($('formMsg'),'err','אי אפשר לחסום כל כך הרבה ימי סופ"ש.');return}
   values[d]=nv;dirty=true;msg($('formMsg'),'','');renderCal();
 }
 $('save').onclick=function(){
