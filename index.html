@@ -228,7 +228,7 @@
       <div id="vList"></div>
     </div>
   </div>
-<div class="ver">גרסה 8.3 (17/11)</div>
+<div class="ver">גרסה 8.4 (17/11)</div>
 </main>
 <div id="topAlert" role="alert"></div>
 <div class="bar" id="bar"><div class="in"><button class="btn" id="save">שליחת אילוצים</button></div></div>
@@ -458,6 +458,7 @@ function tap(d){
   if(nv==='B'&&cur!=='B'&&blocks()>=myMax){topAlert('הגעת למקסימום החסימות. צריך עוד? פנו לאחראית. בהיעדרות ממושכת יש לעדכן את האחראית מוקדם ככל האפשר.');return}
   if(nv==='B'&&cur!=='B'&&isWk(d)&&wkBlocks()>=wkMax()){topAlert('אי אפשר לחסום כל כך הרבה ימי סופ"ש.');return}
   values[d]=nv;dirty=true;msg($('formMsg'),'','');renderCal();
+  if(nv==='B'&&blocks()>shownMax)topAlert('עברת את מספר החסימות המותר.');
 }
 $('save').onclick=function(){
   $('save').disabled=true;msg($('formMsg'),'info','שולח...');
