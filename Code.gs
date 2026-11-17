@@ -21,7 +21,7 @@ var RESP_HEADERS = ['תקופה', 'שם', 'מייל', 'עודכן', 'מספר ח
 var SCHED_HEADERS = ['תקופה', 'נתונים', 'פורסם', 'עודכן'];
 var REQ_HEADERS = ['מזהה', 'סוג', 'סטטוס', 'מבקש', 'מול', 'פרטים', 'הערה', 'נוצר', 'טופל'];
 var SETTING_KEYS = ['periodId', 'start', 'end', 'maxBlocks', 'holidays', 'open', 'title', 'emailNotify', 'deadline',
-  'shiftStart', 'shiftEnd', 'wkStart', 'wkEnd', 'reminders', 'adminEmail', 'shownBlocks', 'siteUrl'];
+  'shiftStart', 'shiftEnd', 'wkStart', 'wkEnd', 'reminders', 'adminEmail', 'shownBlocks', 'siteUrl', 'wkBlocks'];
 var PERIOD_HEADERS = ['תקופה', 'מתאריך', 'עד תאריך', 'חגים'];
 
 /* הצבעים מהסידור הקיים */
@@ -222,14 +222,15 @@ function submitResponse(name, email, values, note) {
     if (!submitOpenFor_(s, emp)) throw new Error('הגשת האילוצים לתקופה הזו סגורה. אם פספסת, פנה/י לאחראית שתפתח לך.');
     var limit = emp.maxBlocks !== '' ? parseInt(emp.maxBlocks, 10) : s.maxBlocks;
     var days = listDays_(s.start, s.end);
-    var clean = {}, blocks = 0;
+    var clean = {}, blocks = 0, wk = 0;
     days.forEach(function (d) {
       var v = values && values[d];
       v = (v === 'B' || v === 'W') ? v : 'C';
-      if (v === 'B') blocks++;
+      if (v === 'B') { blocks++; if (dow_(d) === 5 || dow_(d) === 6 || s.holidays.indexOf(d) >= 0) wk++; }
       clean[d] = v;
     });
-    if (blocks > limit) throw new Error('סימנת יותר מדי חסימות. צריך עוד? פנו לאחראית.');
+    if (blocks > limit) throw new Error('סימנת יותר מדי חסימות. צריך עוד? פנו לאחראית. בהיעדרות ממושכת יש לעדכן את האחראית מוקדם ככל האפשר.');
+    if (wk > s.wkBlocks) throw new Error('אי אפשר לחסום כל כך הרבה ימי סופ"ש.');
     var updated = saveResponseRow_(s.periodId, emp.name, emp.email, clean, note == null ? '' : note);
     return { ok: true, updated: updated, blocks: blocks };
   });
@@ -436,6 +437,7 @@ function adminSaveSettings(pw, ns, newPeriod) {
     shiftStart: time_(ns.shiftStart), shiftEnd: time_(ns.shiftEnd), wkStart: time_(ns.wkStart), wkEnd: time_(ns.wkEnd),
     reminders: ns.reminders === false ? 'FALSE' : 'TRUE',
     shownBlocks: String(parseInt(ns.shownBlocks, 10) || 8),
+    wkBlocks: String(isNaN(parseInt(ns.wkBlocks, 10)) ? 5 : parseInt(ns.wkBlocks, 10)),
     siteUrl: /^https:\/\/\S+$/.test(String(ns.siteUrl || '').trim()) ? String(ns.siteUrl).trim().replace(/\/?$/, '/') : '',
     adminEmail: /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(ns.adminEmail || '').trim()) ? String(ns.adminEmail).trim() : ''
   });
@@ -949,14 +951,15 @@ function readSettings_() {
     reminders: m.reminders === undefined || m.reminders === '' ? true : String(m.reminders).toUpperCase() === 'TRUE',
     adminEmail: m.adminEmail || '',
     shownBlocks: parseInt(m.shownBlocks, 10) || 8,
-    siteUrl: m.siteUrl || ''
+    siteUrl: m.siteUrl || '',
+    wkBlocks: m.wkBlocks === undefined || m.wkBlocks === '' ? 5 : (parseInt(m.wkBlocks, 10) || 0)
   };
 }
 function settingsToRow_(s) {
   return { periodId: s.periodId, start: s.start, end: s.end, maxBlocks: String(s.maxBlocks), holidays: s.holidays.join(','),
     open: s.open ? 'TRUE' : 'FALSE', title: s.title, emailNotify: s.emailNotify ? 'TRUE' : 'FALSE', deadline: s.deadline || '',
     shiftStart: s.shiftStart || '', shiftEnd: s.shiftEnd || '', wkStart: s.wkStart || '', wkEnd: s.wkEnd || '',
-    reminders: s.reminders ? 'TRUE' : 'FALSE', adminEmail: s.adminEmail || '', shownBlocks: String(s.shownBlocks || 8), siteUrl: s.siteUrl || '' };
+    reminders: s.reminders ? 'TRUE' : 'FALSE', adminEmail: s.adminEmail || '', shownBlocks: String(s.shownBlocks || 8), siteUrl: s.siteUrl || '', wkBlocks: String(s.wkBlocks == null ? 5 : s.wkBlocks) };
 }
 function writeSettings_(o) {
   var sh = getSheet_(SH.settings);
@@ -964,7 +967,7 @@ function writeSettings_(o) {
   sh.getRange(2, 1, rows.length, 2).setNumberFormat('@').setValues(rows);
 }
 function publicSettings_(s) {
-  return { periodId: s.periodId, start: s.start, end: s.end, maxBlocks: s.maxBlocks, holidays: s.holidays,
+  return { periodId: s.periodId, start: s.start, end: s.end, maxBlocks: s.maxBlocks, holidays: s.holidays, wkBlocks: s.wkBlocks,
     open: s.open, title: s.title, emailNotify: s.emailNotify, deadline: s.deadline, today: todayIso_(),
     shiftStart: s.shiftStart, shiftEnd: s.shiftEnd, wkStart: s.wkStart, wkEnd: s.wkEnd,
     reminders: s.reminders, adminEmail: s.adminEmail, shownBlocks: s.shownBlocks, siteUrl: s.siteUrl };
