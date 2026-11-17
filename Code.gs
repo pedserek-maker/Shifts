@@ -57,12 +57,15 @@ var API_ = {
   adminExport: adminExport, adminSetExtension: adminSetExtension, adminSetCurrentPeriod: adminSetCurrentPeriod,
   adminDeletePeriod: adminDeletePeriod, adminResetPassword: adminResetPassword, adminListVersions: adminListVersions
 };
+/** פעולות שרק קוראות נתונים (אפשר לקרוא כל לשונית פעם אחת) */
+var READONLY_ = { getPublicData: 1, getPublishedSchedule: 1, getMyData: 1, getLoginState: 1, adminLoad: 1, adminListVersions: 1 };
 function doPost(e) {
   var out;
   try {
     var req = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     var fn = API_[req.fn];
     if (!fn) throw new Error('פעולה לא מוכרת');
+    MEMO_ = READONLY_[req.fn] ? {} : null;
     out = { ok: true, result: fn.apply(null, req.args || []) };
   } catch (err) {
     out = { ok: false, error: String(err && err.message ? err.message : err) };
@@ -118,7 +121,7 @@ function setup() {
     emp.getRange(1, 1, 1, EMP_HEADERS.length).setValues([EMP_HEADERS]).setFontWeight('bold').setBackground('#eeeeee');
     var props = PropertiesService.getScriptProperties();
     var firstUpgrade = !props.getProperty('COLORS_V2');
-    var data = emp.getDataRange().getDisplayValues();
+    var data = vals_(emp);
     for (var i = 1; i < data.length; i++) {
       if (!norm_(data[i][0])) continue;
       if (firstUpgrade && !data[i][5]) emp.getRange(i + 1, 6).setValue(colorFor_(norm_(data[i][0]), i - 1));
@@ -452,7 +455,7 @@ function adminSaveEmployees(pw, list) {
   var sh = getSheet_(SH.employees);
   var seen = {};
   var oldPw = {};
-  sh.getDataRange().getDisplayValues().slice(1).forEach(function (r0) { if (r0[0]) oldPw[norm_(r0[0])] = r0[10] || ''; });
+  vals_(sh).slice(1).forEach(function (r0) { if (r0[0]) oldPw[norm_(r0[0])] = r0[10] || ''; });
   var rows = (list || []).filter(function (e) { return norm_(e.name); }).map(function (e, i) {
     var n = norm_(e.name);
     if (seen[n]) throw new Error('השם "' + n + '" מופיע פעמיים');
@@ -479,7 +482,7 @@ function adminSaveResponse(pw, periodId, name, values) {
 function adminSetExtension(pw, name, date) {
   checkPw_(pw);
   var sh = getSheet_(SH.employees);
-  var rows = sh.getDataRange().getDisplayValues();
+  var rows = vals_(sh);
   for (var i = 1; i < rows.length; i++) {
     if (norm_(rows[i][0]) === norm_(name)) { sh.getRange(i + 1, 10).setNumberFormat('@').setValue(isIso_(date) ? date : ''); break; }
   }
@@ -545,7 +548,7 @@ function adminDeletePeriod(pw, periodId) {
     [SH.responses, SH.schedules, SH.periods].forEach(function (name) {
       var sh = getSS_().getSheetByName(name);
       if (!sh) return;
-      var rows = sh.getDataRange().getDisplayValues();
+      var rows = vals_(sh);
       for (var i = rows.length - 1; i >= 1; i--) if (rows[i][0] === periodId) sh.deleteRow(i + 1);
     });
     return adminLoad(pw);
@@ -632,7 +635,7 @@ function snapshot_(pid, sc, reason) {
   var row = [pid, Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'dd/MM/yyyy HH:mm:ss'), reason, JSON.stringify({ a: sc.a, o: sc.o || {} })];
   sh.getRange(sh.getLastRow() + 1, 1, 1, 4).setNumberFormat('@').setValues([row]);
   // שומרים עד 40 גרסאות לכל תקופה
-  var rows = sh.getDataRange().getDisplayValues(), idx = [];
+  var rows = vals_(sh), idx = [];
   for (var i = 1; i < rows.length; i++) if (rows[i][0] === pid) idx.push(i + 1);
   for (var j = idx.length - 41; j >= 0; j--) sh.deleteRow(idx[j]);
 }
@@ -640,7 +643,7 @@ function adminListVersions(pw, periodId) {
   checkPw_(pw);
   var sh = getSS_().getSheetByName(SH.versions);
   if (!sh) return [];
-  var rows = sh.getDataRange().getDisplayValues(), out = [];
+  var rows = vals_(sh), out = [];
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][0] !== periodId) continue;
     var d = {};
@@ -737,7 +740,7 @@ function pickByDate_(pubs, today) {
 
 /** כל הסידורים שפורסמו, מהחדש לישן */
 function listPublished_() {
-  var rows = getSheet_(SH.schedules).getDataRange().getDisplayValues();
+  var rows = vals_(getSheet_(SH.schedules));
   var out = [];
   for (var i = 1; i < rows.length; i++) {
     if (!rows[i][0] || rows[i][2] !== 'TRUE') continue;
@@ -796,7 +799,7 @@ function listPeriods_(s) {
     seen[pid] = { periodId: pid, start: reg[pid].start, end: reg[pid].end, published: false, current: false, hasSchedule: false };
     out.push(seen[pid]);
   });
-  var rows = getSheet_(SH.schedules).getDataRange().getDisplayValues();
+  var rows = vals_(getSheet_(SH.schedules));
   for (var i = 1; i < rows.length; i++) {
     var pid = rows[i][0];
     if (!pid) continue;
@@ -804,7 +807,7 @@ function listPeriods_(s) {
     var m = periodMeta_(pid);
     if (m.start) { seen[pid] = { periodId: pid, start: m.start, end: m.end, published: rows[i][2] === 'TRUE', current: false, hasSchedule: true }; out.push(seen[pid]); }
   }
-  var rr = getSheet_(SH.responses).getDataRange().getDisplayValues();
+  var rr = vals_(getSheet_(SH.responses));
   for (var j = 1; j < rr.length; j++) {
     var p2 = rr[j][0];
     if (!p2 || seen[p2]) continue;
@@ -820,7 +823,7 @@ function readPeriodRegistry_() {
   var sh = getSS_().getSheetByName(SH.periods);
   var out = {};
   if (!sh) return out;
-  var rows = sh.getDataRange().getDisplayValues();
+  var rows = vals_(sh);
   for (var i = 1; i < rows.length; i++) {
     if (!rows[i][0]) continue;
     out[rows[i][0]] = { periodId: rows[i][0], start: rows[i][1], end: rows[i][2],
@@ -832,7 +835,7 @@ function savePeriodMeta_(pid, start, end, holidays) {
   var sh = getSS_().getSheetByName(SH.periods);
   if (!sh || !pid || !isIso_(start)) return;
   var row = [pid, start, end, (holidays || []).join(',')];
-  var rows = sh.getDataRange().getDisplayValues();
+  var rows = vals_(sh);
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][0] === pid) { sh.getRange(i + 1, 1, 1, 4).setNumberFormat('@').setValues([row]); return; }
   }
@@ -897,14 +900,26 @@ function withLock_(fn) {
   lock.waitLock(20000);
   try { return fn(); } finally { lock.releaseLock(); }
 }
+/* מהירות: שומרים בזיכרון את הגיליון והלשוניות בתוך אותה בקשה */
+var SS_ = null, SHEETS_ = {}, MEMO_ = null;
 function getSS_() {
+  if (SS_) return SS_;
   var id = PropertiesService.getScriptProperties().getProperty('SSID');
-  return id ? SpreadsheetApp.openById(id) : SpreadsheetApp.getActiveSpreadsheet();
+  SS_ = id ? SpreadsheetApp.openById(id) : SpreadsheetApp.getActiveSpreadsheet();
+  return SS_;
 }
 function getSheet_(name) {
-  var sh = getSS_().getSheetByName(name);
+  var sh = SHEETS_[name] || getSS_().getSheetByName(name);
   if (!sh) throw new Error('חסרה לשונית "' + name + '". הריצי את setup.');
+  SHEETS_[name] = sh;
   return sh;
+}
+/** קריאת כל הנתונים של לשונית. בבקשות קריאה בלבד, כל לשונית נקראת פעם אחת */
+function vals_(sh) {
+  if (!MEMO_) return sh.getDataRange().getDisplayValues();
+  var k = sh.getName();
+  if (!MEMO_[k]) MEMO_[k] = sh.getDataRange().getDisplayValues();
+  return MEMO_[k];
 }
 function ensureSheet_(name, headers) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -918,7 +933,7 @@ function ensureSheet_(name, headers) {
   return sh;
 }
 function readSettings_() {
-  var rows = getSheet_(SH.settings).getDataRange().getDisplayValues();
+  var rows = vals_(getSheet_(SH.settings));
   var m = {};
   for (var i = 1; i < rows.length; i++) if (rows[i][0]) m[rows[i][0]] = rows[i][1];
   return {
@@ -955,7 +970,7 @@ function publicSettings_(s) {
     reminders: s.reminders, adminEmail: s.adminEmail, shownBlocks: s.shownBlocks, siteUrl: s.siteUrl };
 }
 function readEmployees_() {
-  var rows = getSheet_(SH.employees).getDataRange().getDisplayValues();
+  var rows = vals_(getSheet_(SH.employees));
   var out = [];
   for (var i = 1; i < rows.length; i++) {
     var n = norm_(rows[i][0]);
@@ -1010,7 +1025,7 @@ function secret_() {
 }
 function sign_(payload) { return hash_(secret_() + '|' + payload).slice(0, 40); }
 function pwRow_(name) {
-  var sh = getSheet_(SH.employees), rows = sh.getDataRange().getDisplayValues(), n = norm_(name);
+  var sh = getSheet_(SH.employees), rows = vals_(sh), n = norm_(name);
   for (var i = 1; i < rows.length; i++) if (norm_(rows[i][0]) === n) return { sh: sh, row: i + 1, val: rows[i][10] || '' };
   return null;
 }
@@ -1116,7 +1131,7 @@ function adminResetPassword(pw, name) {
   return readEmployees_();
 }
 function readResponses_(periodId) {
-  var rows = getSheet_(SH.responses).getDataRange().getDisplayValues();
+  var rows = vals_(getSheet_(SH.responses));
   var out = {};
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][0] !== periodId) continue;
@@ -1129,7 +1144,7 @@ function readResponses_(periodId) {
 /** note: undefined = להשאיר את ההערה הקיימת */
 function saveResponseRow_(periodId, name, email, values, note) {
   var sh = getSheet_(SH.responses);
-  var rows = sh.getDataRange().getDisplayValues();
+  var rows = vals_(sh);
   var blocks = 0;
   Object.keys(values).forEach(function (k) { if (values[k] === 'B') blocks++; });
   var now = nowStr_();
@@ -1145,7 +1160,7 @@ function saveResponseRow_(periodId, name, email, values, note) {
   return now;
 }
 function readSchedule_(periodId) {
-  var rows = getSheet_(SH.schedules).getDataRange().getDisplayValues();
+  var rows = vals_(getSheet_(SH.schedules));
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][0] === periodId) {
       var d = {};
@@ -1158,7 +1173,7 @@ function readSchedule_(periodId) {
 }
 function writeSchedule_(periodId, a, o, published, meta, keepTime) {
   var sh = getSheet_(SH.schedules);
-  var rows = sh.getDataRange().getDisplayValues();
+  var rows = vals_(sh);
   var now = Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'dd/MM/yyyy HH:mm:ss');
   var row = [periodId, JSON.stringify({ a: a, o: o, m: meta || null }), published ? 'TRUE' : 'FALSE', now];
   for (var i = 1; i < rows.length; i++) {
@@ -1173,7 +1188,7 @@ function writeSchedule_(periodId, a, o, published, meta, keepTime) {
 function readRequests_() {
   var sh = getSS_().getSheetByName(SH.requests);
   if (!sh) return [];
-  var rows = sh.getDataRange().getDisplayValues();
+  var rows = vals_(sh);
   var out = [];
   for (var i = 1; i < rows.length; i++) {
     if (!rows[i][0]) continue;
@@ -1196,7 +1211,7 @@ function appendRequest_(q) {
 }
 function updateRequest_(id, status, to) {
   var sh = getSheet_(SH.requests);
-  var rows = sh.getDataRange().getDisplayValues();
+  var rows = vals_(sh);
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][0] === id) {
       sh.getRange(i + 1, 3).setValue(status); sh.getRange(i + 1, 9).setValue(nowStr_());
